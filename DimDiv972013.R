@@ -44,6 +44,11 @@ Getsplist<-function(commID){
 #Read in data
 ##########################################################
 
+#Load in the data
+#load("C:/Users/Jorge/Dropbox/Shared Ben and Catherine/DimDivEntire/Output Data/Workspace.RData")
+
+
+
 ##set correct working directory to the dropbox Files for Analysis folder, whereever it is
 setwd("C:\\Users\\Jorge\\Dropbox\\Shared Ben and Catherine\\DimDivEntire\\Files for Analysis")  ###Change this to the Files for Analysis folder in your dropbox, no need to move it. 
 
@@ -92,7 +97,7 @@ rownames(mon)<-gsub(" ","_",rownames(mon))
 
 ##########################
 # test matrix and traits #
-comm<-siteXspp[1:5,]
+comm<-siteXspp[1:50,]
 #traits<-mon     
 ##########################
 
@@ -116,10 +121,25 @@ sorenson<-melt(as.matrix(vegdist(comm,binary=TRUE)))
 colnames(sorenson)<-c("To","From","Sorenson")
 ######################################
 
+#Phylogenetic PCD
+PCD.func<-pcd(comm,tree=tree.func)
+PCD.func<-melt(lapply(PCD.func,as.matrix))
+colnames(PCD.func)<-c("To","From","PCD.value.func","PCD.func")
+
+#Phylosor Calculation see Bryant 2008
+Phylosor.func<-melt(as.matrix(phylosor(comm,tree.func)))
+colnames(Phylosor.func)<-c("To","From","Phylosor.Func")
+
+#Merge phylometrics
+funcmetrics<-merge(Phylosor.func,PCD.func,c("To","From"))
+
+#merge this into the phylometrics
+Phylo_Tax2<-merge(phylometrics,funcmetrics,c("To","From"))
+
 #################
 #Trait Metrics
 #################
-Phylo_Tax<-merge(phylometrics,sorenson,c("To","From"))
+Phylo_Tax<-merge(Phylo_Tax2,sorenson,c("To","From"))
 
 #############################################
 #Non-dendrogram approach, functional approach employed by villeger 2013
@@ -158,10 +178,13 @@ Allmetrics<-merge(func.beta,Phylo_Tax,by=c("To","From"))
 #Cast out the full frame
 require(reshape2)
 
-Allmetrics<-dcast(Allmetrics,...~PCD.phylo,value.var="PCD.value.phylo")
-colnames(Allmetrics)[11:13]<-c("PCD.phylo","PCDc.phylo","PCDp.phylo")
+Allmetrics1<-dcast(Allmetrics,...~PCD.phylo,value.var="PCD.value.phylo")
+colnames(Allmetrics1)[14:16]<-c("PCD.phylo","PCDc.phylo","PCDp.phylo")
 
-return(Allmetrics)}
+Allmetrics2<-dcast(Allmetrics1,...~PCD.func,value.var="PCD.value.func")
+colnames(Allmetrics2)[15:17]<-c("PCD.func","PCDc.func","PCDp.func")
+
+return(Allmetrics2)}
 
 system.time(beta_metrics<-beta_all(comm=comm,tree=tree,traits=mon,FullMatrix=FALSE))
                             
@@ -172,7 +195,6 @@ head(beta_metrics)
 #################################################################################
 #This is just an idea, but it seems duplicatous to draw this huge matrix with replacment 219*219
 #What makes more sense is just visualize the type of assemblages we have
-table(apply(siteXspp,1,sum))
 
 #Any assemblage drawing from a comparison of richness = 6 in A and richness =8 in B is drawn from the same distribution
 #Therefore just simulate one distribution for each unique type of assemblage comparison
@@ -204,10 +226,11 @@ rownames(null.siteXspp.matrix)[(length(richness_levels)+1):(length(richness_leve
 cl<-makeCluster(8,"SOCK")
 registerDoSNOW(cl)
 
-null_models<-foreach(x=1:8,.combine=rbind,.packages=c("vegan","picante","reshape","foreach")) %dopar% { 
+null_models<-foreach(x=1:100,.combine=rbind,.packages=c("vegan","picante","reshape","foreach")) %dopar% { 
+  paste("Iteration is:",x)
   null.assemblage<-commsimulator(comm,"r0")
-  beta_metrics<-beta_all(comm=null.siteXspp.matrix,tree=tree,traits=mon,FullMatrix=TRUE)
-  return(data.frame(beta_metrics,Iteration=x))
+  null_beta_metrics<-beta_all(comm=null.siteXspp.matrix,tree=tree,traits=mon,FullMatrix=TRUE)
+  return(data.frame(null_beta_metrics,Iteration=x))
 }
 stopCluster(cl)
 
@@ -235,7 +258,7 @@ poly.list<-lapply(envP,readShapePoly)
 extract.list<-lapply(env.list, function(x) extract(x,loc))
 poly.df<-over(loc,poly.list[[1]])
 
-#THIS MUST BE DONE MANUALLY and must be Correct order comepared to envL!!!! sorry.
+#THIS MUST BE DONE MANUALLY and must be Correct order compared to envL! 
 names(extract.list)<-c("AnnualPrecip","Elev","H_mean","AnnualTemp","Tree")
 Envtable<-data.frame(loc@data,as.data.frame(extract.list))
 Envtable$Biome<-poly.df$BIOME
@@ -282,9 +305,8 @@ colnames(CostPathMatrix)<-Envtable$ID_Comm
 elevr<-raster("studyarea_1km.tif")
 
 #Try different elevation layer
-elev.test<-raster("D:\\GISDATA/")
 elev.test<-crop(elevr,extent(loc)*1.2)
-elev.test<-aggregate(elev.test,100)
+elev.test<-aggregate(elev.test,10)
 
 #Find shortest cost path
 cl<-makeCluster(8,"SOCK")
@@ -388,13 +410,13 @@ Evar.m<-lapply(Evar,function(x) {
   return(y)})
 
 test.Evar<-melt(Evar.m)
-compare<-cast(test.Evar,X1+X2~L1)
-colnames(compare)<-c("To","From",names(compare[-c(1,2)]))
+compare.env<-cast(test.Evar,X1+X2~L1)
+colnames(compare.env)<-c("To","From",names(compare.env[-c(1,2)]))
 
 #####################################################
 #Merge Betadiversity and Environmnetal Dissimilairity
 #####################################################
-data.merge<-merge(compare,beta_metrics,by=c("To","From"))
+data.merge<-merge(compare.env,beta_metrics,by=c("To","From"))
 
 #################################################
 #Null Model Analysis
@@ -409,7 +431,7 @@ data.merge<-merge(compare,beta_metrics,by=c("To","From"))
 #For each pair of assemblage compare the observed metrics to the null distribution. 
 null_lists<-list()
 for (x in 1:nrow(data.merge)){
-
+print(x)
 #Select Row
 rowS<-data.merge[x,]
   
@@ -423,14 +445,18 @@ null_rows<-null_models[null_models$To==richness_To & null_models$From==richness_
 
 null_stats<-sapply(colnames(null_rows)[-c(1,2,14)],function(y){
 
+print(y)
+
+if(rowS[,y]==NULL)
 #Create a distribution of null values
 test_stat<-ecdf(null_rows[,y]) (rowS[,y])
 
 if(test_stat >= .95) return(answer<-"High")
 if(test_stat <= .05) return(answer<-"Low")
-if( test_stat <= .95 & test_stat >= .05 ) return(answer<-"Null")
+if( test_stat <= .95 & test_stat >= .05 ) return(answer<-"Random")
 return(answer)
 })
+
 null_lists[[x]]<-data.frame(t(c(To=rowS$To,From=rowS$From,null_stats)))
 }
 
@@ -442,6 +468,9 @@ colnames(null_dataframe)<-c("To","From",paste(colnames(null_rows)[-c(1,2,14)],"N
 #Combine the environmental, observed and null metrics into a huge dataframe
 data.df<-merge(data.merge,null_dataframe,by=c("To","From"))
 
+#Or save data
+save.image("C:/Users/Jorge/Dropbox/Shared Ben and Catherine/DimDivEntire/Output Data/Workspace.RData")
+
 #Data Generation Complete
 ##########################################################################################
 ##########################################################################################
@@ -450,66 +479,35 @@ data.df<-merge(data.merge,null_dataframe,by=c("To","From"))
 #Tables and Statistics
 #########################################################################################
 
-#Range of PCD values
-tapply(data.d$PCDc,data.d$PCDcNull,range,na.rm=TRUE,finite=TRUE)
-tapply(data.d$PCDp,data.d$PCDpNull,range,na.rm=TRUE,finite=TRUE)
-tapply(data.d$PCDp.f,data.d$PCDfNull,range,na.rm=TRUE,finite=TRUE)
+########################## Not yet complete
+#This will need to be edited for null later?
 
-#Range of PCD values
-tapply(data.d$PCDc,data.d$PCDcNull,table,na.rm=TRUE,finite=TRUE)
-tapply(data.d$PCDp,data.d$PCDpNull,table,na.rm=TRUE,finite=TRUE)
-tapply(data.d$PCDp.f,data.d$PCDfNull,range,na.rm=TRUE,finite=TRUE)
+#Get the bounds of each 
+range_metrics<-list()
 
+for(x in 0:10){
+range_min<-aggregate(data.df[,13+x],list(data.df[,24+x]),min,na.rm=TRUE)
+range_max<-aggregate(data.df[,13+x],list(data.df[,24+x]),max,na.rm=TRUE)
+
+range_val<-data.frame(Index=c("Low","High"),Min=range_min[,2],Max=range_max[,2])
+range_metrics[[x+1]]<-range_val
+}
+
+names(range_metrics)<-colnames(data.df)[13:23]
+range_metrics<-melt(range_metrics)
+
+
+#Find Prevalence of each combination
+data_prev<-lapply(colnames(data.df)[24:34],function(x){
+range_prev<-table(data.df[,x])/nrow(data.df)})
 
 #write final data to file
 setwd("C:\\Users\\Jorge\\Dropbox\\Shared Ben and Catherine\\DimDivEntire\\Output Data")
 write.csv(data.d,"datafinal.csv")
 
-#remove the combinations with identical lists, its a very small number - 5 of 23871
-#toremove<-data.d[!is.finite(data.d$PCDp),c("To","From")]
-
-#for (i in 1:nrow(toremove)){
-# lapply(Evar.m,function(x){
-#  print(x[as.character(toremove[i,1]),as.character(toremove[i,2])])
-#})}
-
-#create mantel output matrices
-cl<-makeCluster(6,"SOCK")
-registerDoSNOW(cl)
-output<-foreach(w=1:length(Evar), .combine=rbind) %dopar% {
-  require(vegan)
-  
-  #mantel test pairwise R^2 estimates
-  test<-sapply(minputs,function(x) mantel(x,Evar[[w]], method="spearman",permutations=4000))
-  lapply(as.numeric(cbind(test["statistic",]))
-}
-
-rownames(output)<-names(Evar)
-colnames(output)<-names(minputs)
-
-#perform mantel tests signif
-outputsignif<-foreach(w=1:length(Evar), .combine=rbind) %dopar% {
-  require(vegan)
-  
-  #mantel test pairwise R^2 estimates
-  test<-sapply(minputs,function(x) mantel(x,Evar[[w]]))
-  as.numeric(cbind(test["signif",]))
-}
-rownames(outputsignif)<-names(Evar)
-colnames(outputsignif)<-names(minputs)
-stopCluster(cl)
-
-#write mantel tests to file
-setwd("C:\\Users\\Jorge\\Dropbox\\Shared Ben and Catherine\\DimDivEntire\\Mantel Tests")
-write.csv(output,file="manteltests.csv")
-write.csv(outputsignif,file="mantelsignif.csv")
-
-#This is the end of data creation save the image
-save.image("C:/Users/Jorge/Dropbox/Shared Ben and Catherine/DimDivEntire/Output Data/Workspace.RData")
-
-####################DATA CREATION Is DONE. Now its time to test the hypothesis. 
-#Bring in data if you are starting here. 
-#load("C:/Users/Jorge/Dropbox/Shared Ben and Catherine/DimDivEntire/Output Data/Workspace.RData")
+###################################################
+#Combinations of the dimensions of betadiversity
+###################################################
 
 #Delinate the combinations of betadiversity
 Hyplist<-split(data.d,list(data.d$PCDcNull,data.d$PCDpNull,data.d$PCDfNull))
