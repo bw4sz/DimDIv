@@ -23,7 +23,6 @@ require(fields)
 ###########################
 ###############Read in data
 ###########################
-
 ###Define Source Functions
 
 source("C:/Users/Jorge/Dropbox/Scripts/DimDiv/Scripts/geb12021-sup-0004-si.R.txt")
@@ -40,7 +39,6 @@ lappend <- function(lst, obj) {
 Getsplist<-function(commID){
   names(siteXspp[commID,which(siteXspp[commID,]==1)])
 }
-
 
 ##########################################################
 #Read in data
@@ -63,7 +61,6 @@ spnames<-read.table(file="SpNameTree.txt" , sep = "\t", header = TRUE)
 
 #Replace tip.label with Spnames#
 tree$tip.label<-as.character(spnames$SpName) 
-
 
 #Run PCD and split out into functional compenents, 
 tree.func<-read.tree("func.tre")
@@ -99,8 +96,7 @@ comm<-siteXspp[1:5,]
 #traits<-mon     
 ##########################
 
-beta_all<-function(comm,tree,traits,cores,fullMatrix){
-
+beta_all<-function(comm,tree,traits,cores,FullMatrix){
 
 #Phylogenetic PCD
 PCD.phylo<-pcd(comm,tree)
@@ -120,10 +116,10 @@ sorenson<-melt(as.matrix(vegdist(comm,binary=TRUE)))
 colnames(sorenson)<-c("To","From","Sorenson")
 ######################################
 
-##################
+#################
 #Trait Metrics
 #################
-head(Phylo_Tax<-merge(phylometrics,sorenson,c("To","From")))
+Phylo_Tax<-merge(phylometrics,sorenson,c("To","From"))
 
 #############################################
 #Non-dendrogram approach, functional approach employed by villeger 2013
@@ -136,22 +132,20 @@ mon_cut<-traits[rownames(traits) %in% colnames(comm),]
 siteXspp_traits<-comm[,colnames(comm) %in% rownames(mon_cut)]
                   
 #get all pairwise combinations of sites, depending if you want a full matrix (null) or sparse matrix (observed values)
-
-if(fullMatrix=FALSE){pair.w<-combn(rownames(siteXspp_traits),2,simplify=FALSE)}
-if(fullMatrix=TRUE){
-  pair.w<-expand.grid(rownames(siteXspp_traits),rownames(siteXspp_traits))
-  pair.w<- as.list(as.data.frame(t(pair.wF)))}
+if(FullMatrix==FALSE){pair.w<-combn(rownames(siteXspp_traits),2,simplify=FALSE)}
+if(FullMatrix==TRUE){
+  #Get the combinations of the null model, we only want  "A" compared to "B"
+  pair.w<-expand.grid(rownames(null.siteXspp.matrix)[1:length(richness_levels)],rownames(null.siteXspp.matrix)[(length(richness_levels)+1):(length(richness_levels)*2)])
+  pair.w<- as.list(as.data.frame(t(pair.w)))
+}
 
 #loop through all pairs of assemblages and get the functional overlap
-#cl<-makeCluster(cores,"SOCK")
-#registerDoSNOW(cl)
 system.time(pairwise.beta<-foreach(x=pair.w,.combine=rbind,.packages=c("vegan","reshape")) %do%{
   source("C:/Users/Jorge/Dropbox/Scripts/DimDiv/Scripts/geb12021-sup-0004-si.R.txt")
-  Villeger<-beta_TF( siteXspp_traits[rownames(siteXspp_traits) %in% x,] ,as.matrix(mon_cut))$beta
+  Villeger<-beta_TF(siteXspp_traits[rownames(siteXspp_traits) %in% x,] ,as.matrix(mon_cut))$beta
   Villeger<-melt(Villeger)
   cast(Villeger,~X1+X2)
   })
-#stopCluster(cl)
 
 #Get the order of inputs
 pairwise.order<-t(sapply(pair.w,function(x) {matrix(nrow=1,ncol=2,x)}))
@@ -169,11 +163,10 @@ colnames(Allmetrics)[11:13]<-c("PCD.phylo","PCDc.phylo","PCDp.phylo")
 
 return(Allmetrics)}
 
-system.time(beta_metrics<-beta_all(comm=comm,tree=tree,traits=mon))
+system.time(beta_metrics<-beta_all(comm=comm,tree=tree,traits=mon,FullMatrix=FALSE))
                             
 #Visualizations of the beta metrics
 head(beta_metrics)
-
 
 #################################################################################
 #################################################################################
@@ -183,16 +176,18 @@ table(apply(siteXspp,1,sum))
 
 #Any assemblage drawing from a comparison of richness = 6 in A and richness =8 in B is drawn from the same distribution
 #Therefore just simulate one distribution for each unique type of assemblage comparison
-
+richness_sites<-apply(siteXspp,1,sum)
 richness_levels<-as.numeric(names(table(apply(siteXspp,1,sum))))
 
 null_siteXspp<-sapply(richness_levels,function(x){
   sp.x<-sample(splist,x)
 })
+
 #create siteXspp table for this new assemblage
+#Multiple the row length by 2 since we need to compute expected metrics when Richness of A = Richness of B
 names(null_siteXspp)<-richness_levels
-null.siteXspp.matrix<-matrix(nrow=length(richness_levels),ncol=length(splist))
-rownames(null.siteXspp.matrix)<-richness_levels
+null.siteXspp.matrix<-matrix(nrow=length(richness_levels)*2,ncol=length(splist))
+rownames(null.siteXspp.matrix)<-rep(richness_levels,2)
 colnames(null.siteXspp.matrix)<-splist
 
 #Insert the correct numbers of 0,1 for each row
@@ -201,28 +196,22 @@ rich<-as.numeric(rownames(null.siteXspp.matrix)[x])
 null.siteXspp.matrix[x,]<-sample(c(rep(0,length(splist)-rich),rep(1,rich)),replace=FALSE)
 }
 
+#for the foreach function there can't be duplicate rownmaes, set the first as A and the 2nd as B
+rownames(null.siteXspp.matrix)[1:length(richness_levels)]<-paste(rownames(null.siteXspp.matrix)[1:length(richness_levels)],"A")
+rownames(null.siteXspp.matrix)[(length(richness_levels)+1):(length(richness_levels)*2)]<-paste(rownames(null.siteXspp.matrix)[(length(richness_levels)+1):(length(richness_levels)*2)],"B")
+
+#Compute null distributions for each combination of taxonomic diversity, use FullMatrix=TRUE
 cl<-makeCluster(8,"SOCK")
 registerDoSNOW(cl)
+
 null_models<-foreach(x=1:8,.combine=rbind,.packages=c("vegan","picante","reshape","foreach")) %dopar% { 
   null.assemblage<-commsimulator(comm,"r0")
-  beta_metrics<-beta_all(comm=null.siteXspp.matrix,tree=tree,traits=mon)
+  beta_metrics<-beta_all(comm=null.siteXspp.matrix,tree=tree,traits=mon,FullMatrix=TRUE)
   return(data.frame(beta_metrics,Iteration=x))
 }
 stopCluster(cl)
 
-
-
 #Null model for beta metrics, this is just here for sample, the real code will need a cluster!
-require(vegan)
-
-cl<-makeCluster(8,"SOCK")
-registerDoSNOW(cl)
-null_models<-foreach(x=1:8,.combine=rbind,.packages=c("vegan","picante","reshape","foreach")) %dopar% { 
-  null.assemblage<-commsimulator(comm,"r0")
-beta_metrics<-beta_all(comm=null.assemblage[,],tree=tree,traits=mon)
-return(data.frame(beta_metrics,Iteration=x))
-}
-stopCluster(cl)
 
 ##############################################################
 #Step 2 Bring in Env Info and Dissimilarity 
@@ -335,7 +324,6 @@ setwd("C:/Users/Jorge/Dropbox/Shared Ben and Catherine/DimDivEntire/Output Data"
 write.csv(CostPathMatrix,"CostPathCost.csv")
 
 ##############################If you did skip making the costpath, start here again. 
-
 Evar<-lappend(Evar,as.matrix(CostPathMatrix))
 names(Evar)<-c(names(Envtable[7:ncol(Envtable)]),"Euclid", "CostPathCost")
 
@@ -421,10 +409,17 @@ data.merge<-merge(compare,beta_metrics,by=c("To","From"))
 #For each pair of assemblage compare the observed metrics to the null distribution. 
 null_lists<-list()
 for (x in 1:nrow(data.merge)){
-  print(x)
+
+#Select Row
 rowS<-data.merge[x,]
-#Grab all the iteration rows
-null_rows<-null_models[null_models$To==rowS$To & null_models$From==rowS$From,]
+  
+#What is the richness of each assemblage in this comparison?
+#Paste A and B on that to get the row names of the null model dataframe
+richness_To<-paste(richness_sites[names(richness_sites) %in% rowS$To],"A")
+richness_From<-paste(richness_sites[names(richness_sites) %in% rowS$From],"B")
+
+#Grab all the iteration rows that match these richness 
+null_rows<-null_models[null_models$To==richness_To & null_models$From==richness_From,]
 
 null_stats<-sapply(colnames(null_rows)[-c(1,2,14)],function(y){
 
@@ -436,19 +431,24 @@ if(test_stat <= .05) return(answer<-"Low")
 if( test_stat <= .95 & test_stat >= .05 ) return(answer<-"Null")
 return(answer)
 })
-null_lists[[x]]<-null_stats
+null_lists[[x]]<-data.frame(t(c(To=rowS$To,From=rowS$From,null_stats)))
 }
 
+#Bind together the null model outputs
+rownames(null_lists)<-NULL
+null_dataframe<-rbind.fill(null_lists)
+colnames(null_dataframe)<-c("To","From",paste(colnames(null_rows)[-c(1,2,14)],"Null",sep="_"))
 
-#Append null model to the larger dataset
-data.d<-merge(data.d[,1:17],NullM,,by=c("To","From"))
+#Combine the environmental, observed and null metrics into a huge dataframe
+data.df<-merge(data.merge,null_dataframe,by=c("To","From"))
 
-#get some data on the null model output
-ggplot(data.d,aes(x=PCDcNull,y=PCDc)) + geom_boxplot()
-ggplot(data.d,aes(x=PCDpNull,y=PCDp)) + geom_boxplot()
-ggplot(data.d,aes(x=PCDfNull,y=PCDp.f)) + geom_boxplot()
+#Data Generation Complete
+##########################################################################################
+##########################################################################################
 
-#In appendix?
+##########################################################################################
+#Tables and Statistics
+#########################################################################################
 
 #Range of PCD values
 tapply(data.d$PCDc,data.d$PCDcNull,range,na.rm=TRUE,finite=TRUE)
