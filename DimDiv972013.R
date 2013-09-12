@@ -19,10 +19,15 @@ library(doSNOW)
 library(foreach)
 require(FD)
 require(fields)
+require(GGally)
 
 ###########################
 ###############Read in data
 ###########################
+
+#load data if desired
+load("C:/Users/Jorge/Dropbox/Shared Ben and Catherine/DimDivRevision/Results/DimDivRevision.rData.RData")
+
 ###Define Source Functions
 
 source("C:/Users/Jorge/Dropbox/Scripts/DimDiv/Scripts/geb12021-sup-0004-si.R.txt")
@@ -97,7 +102,7 @@ rownames(mon)<-gsub(" ","_",rownames(mon))
 
 ##########################
 # test matrix and traits #
-comm<-siteXspp[1:50,]
+comm<-siteXspp[1:100,]
 #traits<-mon     
 ##########################
 
@@ -160,18 +165,25 @@ if(FullMatrix==TRUE){
 }
 
 #loop through all pairs of assemblages and get the functional overlap
-system.time(pairwise.beta<-foreach(x=pair.w,.combine=rbind,.packages=c("vegan","reshape")) %do%{
+pairwise.beta<-foreach(x=pair.w,.packages=c("vegan","reshape"),.errorhandling="pass") %do%{
   source("C:/Users/Jorge/Dropbox/Scripts/DimDiv/Scripts/geb12021-sup-0004-si.R.txt")
   Villeger<-beta_TF(siteXspp_traits[rownames(siteXspp_traits) %in% x,] ,as.matrix(mon_cut))$beta
   Villeger<-melt(Villeger)
   cast(Villeger,~X1+X2)
-  })
+  }
+
+toremove<-sapply(pairwise.beta,function(x) is.character(x[[1]]))
+
+#get rid of the NA rows
+toremove<-sapply(pairwise.beta,function(x) is.character(x[[1]]))
+pairwise.beta.removed<-rbind.fill(pairwise.beta[!toremove])
 
 #Get the order of inputs
 pairwise.order<-t(sapply(pair.w,function(x) {matrix(nrow=1,ncol=2,x)}))
+pairwise.order.removed<-pairwise.order[!toremove,]
 
 #Combine the dataframes
-func.beta<-data.frame(pairwise.order,pairwise.beta)[,-3]
+func.beta<-data.frame(pairwise.order.removed,pairwise.beta.removed)[,-3]
 colnames(func.beta)[1:2]<-c("To","From")
 Allmetrics<-merge(func.beta,Phylo_Tax,by=c("To","From"))
 
@@ -201,21 +213,16 @@ head(beta_metrics)
 richness_sites<-apply(siteXspp,1,sum)
 richness_levels<-as.numeric(names(table(apply(siteXspp,1,sum))))
 
-null_siteXspp<-sapply(richness_levels,function(x){
-  sp.x<-sample(splist,x)
-})
+paste("Iteration is:",x)
 
-#create siteXspp table for this new assemblage
-#Multiple the row length by 2 since we need to compute expected metrics when Richness of A = Richness of B
-names(null_siteXspp)<-richness_levels
 null.siteXspp.matrix<-matrix(nrow=length(richness_levels)*2,ncol=length(splist))
 rownames(null.siteXspp.matrix)<-rep(richness_levels,2)
 colnames(null.siteXspp.matrix)<-splist
 
 #Insert the correct numbers of 0,1 for each row
 for(x in 1:nrow(null.siteXspp.matrix)){
-rich<-as.numeric(rownames(null.siteXspp.matrix)[x])
-null.siteXspp.matrix[x,]<-sample(c(rep(0,length(splist)-rich),rep(1,rich)),replace=FALSE)
+  rich<-as.numeric(rownames(null.siteXspp.matrix)[x])
+  null.siteXspp.matrix[x,]<-sample(c(rep(0,length(splist)-rich),rep(1,rich)),replace=FALSE)
 }
 
 #for the foreach function there can't be duplicate rownmaes, set the first as A and the 2nd as B
@@ -226,12 +233,13 @@ rownames(null.siteXspp.matrix)[(length(richness_levels)+1):(length(richness_leve
 cl<-makeCluster(8,"SOCK")
 registerDoSNOW(cl)
 
-null_models<-foreach(x=1:100,.combine=rbind,.packages=c("vegan","picante","reshape","foreach")) %dopar% { 
-  paste("Iteration is:",x)
-  null.assemblage<-commsimulator(comm,"r0")
-  null_beta_metrics<-beta_all(comm=null.siteXspp.matrix,tree=tree,traits=mon,FullMatrix=TRUE)
+
+system.time(null_models<-foreach(x=1:50,.combine=rbind,.packages=c("vegan","picante","reshape","foreach")) %dopar% { 
+  print(x)
+  null.matrix<-commsimulator(null.siteXspp.matrix,"r0")
+  null_beta_metrics<-beta_all(comm=null.matrix,tree=tree,traits=mon,FullMatrix=TRUE)
   return(data.frame(null_beta_metrics,Iteration=x))
-}
+})
 stopCluster(cl)
 
 #Null model for beta metrics, this is just here for sample, the real code will need a cluster!
@@ -418,9 +426,9 @@ colnames(compare.env)<-c("To","From",names(compare.env[-c(1,2)]))
 #####################################################
 data.merge<-merge(compare.env,beta_metrics,by=c("To","From"))
 
-#################################################
-#Null Model Analysis
-#################################################
+######################################################################
+#######################Null Model Analysis
+######################################################################
 
 #################################################
 #Perform Null Model on Clusters
@@ -443,11 +451,9 @@ richness_From<-paste(richness_sites[names(richness_sites) %in% rowS$From],"B")
 #Grab all the iteration rows that match these richness 
 null_rows<-null_models[null_models$To==richness_To & null_models$From==richness_From,]
 
-null_stats<-sapply(colnames(null_rows)[-c(1,2,14)],function(y){
+null_stats<-sapply(colnames(null_rows)[-c(1,2,18)],function(y){
 
-print(y)
-
-if(rowS[,y]==NULL)
+if(!is.finite(rowS[,y])) return(NA)
 #Create a distribution of null values
 test_stat<-ecdf(null_rows[,y]) (rowS[,y])
 
@@ -463,7 +469,7 @@ null_lists[[x]]<-data.frame(t(c(To=rowS$To,From=rowS$From,null_stats)))
 #Bind together the null model outputs
 rownames(null_lists)<-NULL
 null_dataframe<-rbind.fill(null_lists)
-colnames(null_dataframe)<-c("To","From",paste(colnames(null_rows)[-c(1,2,14)],"Null",sep="_"))
+colnames(null_dataframe)<-c("To","From",paste(colnames(null_dataframe)[-c(1,2)],"Null",sep="_"))
 
 #Combine the environmental, observed and null metrics into a huge dataframe
 data.df<-merge(data.merge,null_dataframe,by=c("To","From"))
@@ -479,72 +485,116 @@ save.image("C:/Users/Jorge/Dropbox/Shared Ben and Catherine/DimDivEntire/Output 
 #Tables and Statistics
 #########################################################################################
 
-########################## Not yet complete
-#This will need to be edited for null later?
+setwd("C:\\Users\\Jorge\\Dropbox\\Shared Ben and Catherine\\DimDivRevision\\Results")
 
 #Get the bounds of each 
 range_metrics<-list()
 
-for(x in 0:10){
-range_min<-aggregate(data.df[,13+x],list(data.df[,24+x]),min,na.rm=TRUE)
-range_max<-aggregate(data.df[,13+x],list(data.df[,24+x]),max,na.rm=TRUE)
+for(x in 0:14){
+  print(x)
+range_min<-aggregate(data.df[,12+x],list(data.df[,27+x]),min,na.rm=TRUE)
+range_max<-aggregate(data.df[,12+x],list(data.df[,27+x]),max,na.rm=TRUE)
 
-range_val<-data.frame(Index=c("Low","High"),Min=range_min[,2],Max=range_max[,2])
+range_val<-data.frame(Index=range_min[,1],Min=range_min[,2],Max=range_max[,2])
 range_metrics[[x+1]]<-range_val
 }
 
-names(range_metrics)<-colnames(data.df)[13:23]
+names(range_metrics)<-colnames(data.df)[12:26]
 range_metrics<-melt(range_metrics)
+
+write.csv(range_metrics,"Range_Metrics.csv")
 
 
 #Find Prevalence of each combination
-data_prev<-lapply(colnames(data.df)[24:34],function(x){
+data_prev<-lapply(colnames(data.df)[27:40],function(x){
 range_prev<-table(data.df[,x])/nrow(data.df)})
 
-#write final data to file
-setwd("C:\\Users\\Jorge\\Dropbox\\Shared Ben and Catherine\\DimDivEntire\\Output Data")
-write.csv(data.d,"datafinal.csv")
+names(data_prev)<-colnames(data.df)[27:40]
+data_prev<-melt(data_prev)
+data_prev<-cast(data_prev,L1~Var.1)
+rownames(data_prev)<-data_prev[,1]
+data_prev<-data_prev[,-1]
+
+write.csv(round(data_prev,3)*100,"NullPrevalence.csv")
+
+###################################################
+#correlation and comparisons
+
+#Taxonomic
+Tax_plot<-ggpairs(data.df[,c("beta_taxonomic","PCDc.phylo","Sorenson")]) 
+Tax_plot
+ggsave("Tax_plot.svg")
+
+#Phylogenetic
+Phylo_plot<-ggpairs(data.df[,c("Phylosor.Phylo","PCDp.phylo")]) 
+Phylo_plot
+ggsave("Phylo_plot.svg")
+
+#Functional
+Func_plot<-ggpairs(data.df[,c("Phylosor.Func","PCDp.func","beta_functional")]) 
+Func_plot
+ggsave("Func_plot.svg")
+
+#Plot each of the metrics with their ranges
+
+range_plots<-lapply(12:26,function(x){
+  print(colnames(data.df)[x])
+print(colnames(data.df)[x+15])
+p<-ggplot(data.df,aes(y=data.df[,colnames(data.df)[x]],x=data.df[,colnames(data.df)[x+15]])) + geom_boxplot()
+p<-p+labs(y=colnames(data.df)[x],x=colnames(data.df)[x+15])
+filnam<-paste(colnames(data.df)[x],"_range.jpeg")
+ggsave(filnam,plot=p,height=7,width=5,dpi=300)
+return(p)})
 
 ###################################################
 #Combinations of the dimensions of betadiversity
 ###################################################
 
-#Delinate the combinations of betadiversity
-Hyplist<-split(data.d,list(data.d$PCDcNull,data.d$PCDpNull,data.d$PCDfNull))
-a<-melt(sapply(Hyplist,nrow)/nrow(data.d))*100
-a$Hyp<-as.character(rownames(a))
+#Create a function that takes the input of which null metrics you want to use to create output lists
 
-#Get number of rows
-ggplot(a) + geom_bar(aes(x=Hyp,y=value)) + theme_bw() + theme(axis.text.x = element_text(angle = 90, hjust = 1)) + ylab("Percent")
+#Create multiple options for the hyplist, hold them in a list and spit them to file seperately
 
-#Remove the random combinations
-#Im not great at regualar expressions
-Hyplist.raw<-Hyplist[!1:length(Hyplist) %in% grep(names(Hyplist),pattern= "Random")]
-names(Hyplist.raw)
+#For testing
 
-#how many rows for each hypothesis
-sapply(Hyplist.raw,nrow)/nrow(data.d)*100
+Tax<-"Sorenson_Null"
+Phylo<-"PCDp.phylo_Null"
+Func<-"beta_functional_Null"
 
-#remove any hypothesis with 0's
-Hyplist.raw<-Hyplist.raw[sapply(Hyplist.raw,nrow) > 1]
-HypBox<-melt(Hyplist.raw, id.vars=c("To","From"),measure.vars=c("Euclid","CostPathCost","AnnualPrecip","Elev"))
+#Input as names of columns
 
+Hyplist.func<-function(Tax,Phylo,Func){
+  
+  #Create directory
+  dir.store<-dir.create(paste(Tax,Phylo,Func,sep="_"))
+  setwd(paste(Tax,Phylo,Func,sep="_"))
+  
+  #Delinate the combinations of betadiversity
+  Hyplist<-split(data.df,list(data.df[,Tax],data.df[,Phylo],data.df[,Func]))
+  
+  #Proportion of combinations for each null model, later make a recursive object that grabs this output for plotting
+  prop.Hyp<-melt(sapply(Hyplist,nrow)/nrow(data.df))*100
+  prop.Hyp$Hyp<-as.character(rownames( prop.Hyp))
+  write.csv(prop.Hyp,"ProportionHypotheses.csv")
+  
+  Hyplist<-Hyplist[sapply(Hyplist,nrow) > 1]
+  HypBox<-melt(Hyplist, id.vars=c("To","From"),measure.vars=c("Euclid","CostPathCost","AnnualPrecip","Elev"))
+  
 ###########################As i see it we need two randomization test, to say the difference in elevation is "high" we should compare that to the dataset as a whole.
 #To say that env differences are between hypothesis, we need to swap those labels.
 #1) Are the environmental differences "high" compared to the dataset?
 #Step 1, get the actual mean values for the env variables for each hypothesis
-true.median<-sapply(Hyplist.raw,function(x){
-  apply(x[,colnames(x) %in% c("Euclid","CostPathCost","AnnualPrecip","Elev")],2,median,na.rm=TRUE)})
+
+true.median<-sapply(Hyplist,function(x){
+apply(x[,colnames(x) %in% c("Euclid","CostPathCost","AnnualPrecip","Elev")],2,median,na.rm=TRUE)})
 true.median<-as.data.frame(melt(true.median))
 colnames(true.median)<-c("Env","Hyp","value")
 
-
 #Step 2, get the number of cases in each hypothesis
-todraw<-sapply(Hyplist.raw,nrow)
+todraw<-sapply(Hyplist,nrow)
 
 #The goal is to draw this many rows from the entire dataset at random
 #create parallel cluster
-cl<-makeCluster(6,"SOCK")
+cl<-makeCluster(8,"SOCK")
 registerDoSNOW(cl)
 
 #run 1000 iterations
@@ -554,13 +604,13 @@ boot.run<-times(1000) %dopar% {
   
   #drawn the desired number of rows
   boot.m<-lapply(as.numeric(todraw),function(x){ 
-    rowstodraw<-sample(rownames(data.d),x)
-    boot.rows<-data.d[rowstodraw,]
+    rowstodraw<-sample(rownames(data.df),x)
+    boot.rows<-data.df[rowstodraw,]
     
     #find median value for each env variables
     cbind(apply(boot.rows[,colnames(boot.rows) %in% c("Euclid","CostPathCost","AnnualPrecip","Elev")],2,median,na.rm=T))
   })
-  names(boot.m)<-names(Hyplist.raw)
+  names(boot.m)<-names(Hyplist)
   boot.mean<-melt(boot.m)[,-2]
   colnames(boot.mean)<-c("Env","Value","Hyp")
   list(boot.mean)}
@@ -592,12 +642,12 @@ mean_Env_CI<-mean_Env_CI[!mean_Env_CI$Env %in% c("Biome","H_mean","Tree","Annual
 
 #just get the data we use for the paper precip, elev, H-mean, Biome, Euclid, CostPath
 ggplot(data=mean_Env_CI) + geom_point(aes(x=Hyp,y=value,col=Upper < .05 | Lower < .05),size=5) + facet_wrap(~ Env,scales="free_y",nrow=2) + theme_bw() + xlab("Combination of Betadiversity") + ylab("Median") + scale_color_discrete("Significant (.05)") + theme(axis.text.x = element_text(angle = 90))
-ggsave("C:\\Users\\Jorge\\Dropbox\\Shared Ben and Catherine\\DimDivEntire\\MS development\\Figures\\Appendix2.jpeg",dpi=300,height=6,width=8)
+ggsave("\Appendix2.jpeg",dpi=300,height=6,width=8)
 
-Now you have a data frame with the difference in means for all reps and the true stat at the end
+#Now you have a data frame with the difference in means for all reps and the true stat at the end
 #Our goal is to figure out if its within the 95 CI interval and then cast it as a matrix
 
-##################################################
+######################################
 #Figure Creation and Export
 ######################################
 
@@ -737,5 +787,6 @@ ggsave("CvF.pdf",height=7,width=7,dpi=300)
 ggplot(data.d,aes(x=PCDp,y=PCDp.f,col=Elev)) + geom_point() + theme_bw() + scale_color_gradient("Elevation",low="gray90",high="black") + xlab("Phylogenetic") + ylab("Trait") + ylim(0,1.8) + xlim(0,1.8) + geom_abline()
 ggsave("PvT.pdf",height=7,width=7.5,dpi=300)
 
+}
 
 ###Done
