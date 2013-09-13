@@ -473,6 +473,9 @@ colnames(null_dataframe)<-c("To","From",paste(colnames(null_dataframe)[-c(1,2)],
 #Combine the environmental, observed and null metrics into a huge dataframe
 data.df<-merge(data.merge,null_dataframe,by=c("To","From"))
 
+#Write to file
+write.csv(data.df,"FinalData.csv")
+
 #Or save data
 save.image("C:/Users/Jorge/Dropbox/Shared Ben and Catherine/DimDivRevision/Results/DimDivRevision.rData.RData")
 
@@ -845,6 +848,7 @@ system.time(Hyplist.func(Tax="Sorenson_Null",Phylo="Phylosor.Phylo_Null",Func="b
 Hyplist.func(Tax="PCDc.phylo_Null",Phylo="PCDp.phylo_Null",Func="beta_functional_Null")
 Hyplist.func(Tax="PCDc.phylo_Null",Phylo="PCDp.phylo_Null",Func="PCDp.func_Null")
 Hyplist.func(Tax="Sorenson_Null",Phylo="Phylosor.Phylo_Null",Func="Phylosor.Func_Null")
+
 
 
 save.image("C:/Users/Jorge/Dropbox/Shared Ben and Catherine/DimDivEntire/Output Data/Workspace.RData")
