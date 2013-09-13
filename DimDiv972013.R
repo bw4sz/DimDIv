@@ -25,8 +25,10 @@ require(stringr)
 ###############Read in data
 ###########################
 
+#sink output for overnight runs so we can see it tomorrow
+sink("C:/Users/Jorge/Dropbox/Shared Ben and Catherine/DimDivRevision/Results/OvernightOutput.txt")
 #load data if desired
-load("C:/Users/Jorge/Dropbox/Shared Ben and Catherine/DimDivRevision/Results/DimDivRevision.rData.RData")
+#load("C:/Users/Jorge/Dropbox/Shared Ben and Catherine/DimDivRevision/Results/DimDivRevision.rData.RData")
 
 ###Define Source Functions
 
@@ -212,7 +214,6 @@ head(beta_metrics)
 richness_sites<-apply(siteXspp,1,sum)
 richness_levels<-as.numeric(names(table(apply(siteXspp,1,sum))))
 
-paste("Iteration is:",x)
 
 null.siteXspp.matrix<-matrix(nrow=length(richness_levels)*2,ncol=length(splist))
 rownames(null.siteXspp.matrix)<-rep(richness_levels,2)
@@ -312,13 +313,13 @@ elevr<-raster("studyarea_1km.tif")
 
 #Try different elevation layer
 elev.test<-crop(elevr,extent(loc)*1.2)
-elev.test<-aggregate(elev.test,10)
+elev.test<-aggregate(elev.test,5)
 
 #Find shortest cost path
 cl<-makeCluster(8,"SOCK")
 registerDoSNOW(cl)
 costPath.list<-foreach(x = 1:length(loc),.packages=c("raster","gdistance")) %dopar% {
-  print(x)
+  
   #pick the original site. 
   orig<-loc[x,]
   #What elevation is the origin
@@ -523,15 +524,14 @@ Tax_plot
 ggsave("Tax_plot.svg")
 
 #Phylogenetic
-Phylo_plot<-ggpairs(data.df[,c("Phylosor.Phylo","PCDp.phylo")]) 
+Phylo_plot<-ggpairs(data.df[is.finite(data.df$PCDp.phylo),][,c("Phylosor.Phylo","PCDp.phylo")]) 
 Phylo_plot
 ggsave("Phylo_plot.svg")
 
 #Functional
-Func_plot<-ggpairs(data.df[,c("Phylosor.Func","PCDp.func","beta_functional")]) 
+Func_plot<-ggpairs(data.df[is.finite(data.df$PCDp.func),][,c("Phylosor.Func","PCDp.func","beta_functional")]) 
 Func_plot
 ggsave("Func_plot.svg")
-
 
 ###Other Scatter plots of interest
 #Function for spatial lines for all hypothesis
@@ -556,7 +556,7 @@ ggsave("PCDpPhylovPCDpFunc.svg",height=7,width=7.5,dpi=300)
 #PCD func and PCD phylo
 p<-ggplot(data.df,aes(y=Phylosor.Func,x=Phylosor.Phylo,col=Elev)) + geom_point() 
 p<-p+ theme_bw() + scale_color_gradient("Elevation",low="gray90",high="black")
-p<-p+ ylab("Taxonomic Sorenson") + xlab("Phylogenetic Phylosor") + coord_equal()
+p<-p+ ylab("Phylogenetic Func") + xlab("Phylogenetic Phylosor") + coord_equal()
 p
 ggsave("Phylosor_Elevation.svg",height=7,width=7.5,dpi=300)
 
@@ -579,7 +579,7 @@ ggsave("PhylosorPhylovConvexHull_Taxonomic.svg",height=7,width=7.5,dpi=300)
 
 #Phylo phylosor and Hulls
 p<-ggplot(data.df,aes(y=beta_functional,x=Phylosor.Phylo,col=Elev)) + geom_point() 
-p<-p+ theme_bw() + scale_color_gradient("Sorenson",low="gray90",high="black")
+p<-p+ theme_bw() + scale_color_gradient("Elevation",low="gray90",high="black")
 p<-p+ ylab("Trait Convex Hull") + xlab("Phylogenetic Phylosor") + coord_equal()
 p
 ggsave("PhylosorPhylovConvexHull_Elevation.svg",height=7,width=7.5,dpi=300)
@@ -621,6 +621,7 @@ return(p)})
 setwd("C:\\Users\\Jorge\\Dropbox\\Shared Ben and Catherine\\DimDivRevision\\Results")
 
 Hyplist.func<-function(Tax,Phylo,Func){
+  setwd("C:\\Users\\Jorge\\Dropbox\\Shared Ben and Catherine\\DimDivRevision\\Results")
   #Create directory
   dir.store<-dir.create(paste(Tax,Phylo,Func,sep="_"))
   setwd(paste(Tax,Phylo,Func,sep="_"))
@@ -738,6 +739,9 @@ Hyplist.func<-function(Tax,Phylo,Func){
   #To do, remove outlier values from CostPath!!
   ###############################################
   
+  head(HypBox)
+  HypBox[HypBox$variable=="CostPathCost" & HypBox$value > 1e9,"value"]<-1e9
+  
   ##Create Boxplots
   plots.hold.3d<-list()
   for (x in 1:length(levels(HypBox$variable))){
@@ -755,7 +759,8 @@ Hyplist.func<-function(Tax,Phylo,Func){
   
   #Plot all simultanously, need to get intercepts on the plot?
   
-  ggplot(HypBox,aes(x=Hyp,y=value)) + geom_boxplot() + facet_wrap(~Diss,scales="free") + theme(axis.text.x = element_text(angle = 90, hjust = 1)) + geom_hline(data=intercepts,aes(yintercept=value,group=Diss), linetype="dashed",col='grey40') + theme_bw()
+  p<-ggplot(HypBox,aes(x=Hyp,y=value)) + geom_boxplot() + facet_wrap(~Diss,scales="free") + theme(axis.text.x = element_text(angle = 90, hjust = 1)) + geom_hline(data=intercepts,aes(yintercept=value,group=Diss), linetype="dashed",col='grey40') + theme_bw()
+  p + theme(axis.text.x = element_text(angle = 90, hjust = 1))
   ggsave("Env3Boxplots.svg",dpi=300,height=8,width=12)
   ggsave("Env3Boxplots.jpeg",dpi=300,height=8,width=12)
   
@@ -770,9 +775,14 @@ Hyplist.func<-function(Tax,Phylo,Func){
   dir.create("Maps")
   setwd("Maps")
   
+  #only Create maps of three way comparisons
+  
+  remove.level<-names(Hyplist)[str_detect(names(Hyplist),"Random")]
+  Hyplist<-Hyplist[!names(Hyplist) %in% remove.level]
+  
   #Lines for each hypothesis, plotted individually
   cl<-makeCluster(8,"SOCK")
-  maps.Hyp<-foreach(f=1:length(Hyplist),.packages=c("reshape","raster","rgdal"),) %dopar% {
+  maps.Hyp<-foreach(f=1:length(Hyplist),.packages=c("reshape","raster","rgdal")) %do% {
     jpeg(paste(names(Hyplist)[f],"RowSwap.jpeg",sep=""),height= 10, width = 10, unit="in", res=300)
     coords<-apply(Hyplist[[f]],1,function(x){
       x_stat<-Envtable[Envtable$CommID %in% as.numeric(x["To"]),c("LatDecDeg","LongDecDeg")]
@@ -807,7 +817,9 @@ Hyplist.func<-function(Tax,Phylo,Func){
       return(comb)
     })
     cordmatrix<-rbind.fill(coords)
-    plot(elevr, axes=TRUE, main=names(Hyplist)[x])
+ 
+    #Plot map and create arrows between assemblages
+    plot(elevr, axes=FALSE,main=names(Hyplist)[x],legend=F,col=colorRampPalette(c("grey90", "grey6"))(255))
     points(loc, col='red', pch=10,cex=.5)
     for (x in 1:nrow(cordmatrix)) {
       arrows(y0=cordmatrix[x,1],x0=cordmatrix[x,2],y1=cordmatrix[x,3],x1=cordmatrix[x,4],length=0, lwd=1)
@@ -829,10 +841,13 @@ Hyplist.func<-function(Tax,Phylo,Func){
 
 
 Hyplist.func(Tax="Sorenson_Null",Phylo="PCDp.phylo_Null",Func="beta_functional_Null")
-
-
-Hyplist.func(Tax="Sorenson_Null",Phylo="Phylosor.Phylo_Null",Func="beta_functional_Null")
+system.time(Hyplist.func(Tax="Sorenson_Null",Phylo="Phylosor.Phylo_Null",Func="beta_functional_Null"))
 Hyplist.func(Tax="PCDc.phylo_Null",Phylo="PCDp.phylo_Null",Func="beta_functional_Null")
+Hyplist.func(Tax="PCDc.phylo_Null",Phylo="PCDp.phylo_Null",Func="PCDp.func_Null")
+Hyplist.func(Tax="Sorenson_Null",Phylo="Phylosor.Phylo_Null",Func="Phylosor.Func_Null")
 
 
 save.image("C:/Users/Jorge/Dropbox/Shared Ben and Catherine/DimDivEntire/Output Data/Workspace.RData")
+
+#detach our overnight sink
+sink()
