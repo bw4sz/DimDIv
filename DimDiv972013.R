@@ -20,7 +20,7 @@ library(foreach)
 require(FD)
 require(fields)
 require(GGally)
-
+require(stringr)
 ###########################
 ###############Read in data
 ###########################
@@ -51,8 +51,6 @@ Getsplist<-function(commID){
 
 #Load in the data
 #load("C:/Users/Jorge/Dropbox/Shared Ben and Catherine/DimDivEntire/Output Data/Workspace.RData")
-
-
 
 ##set correct working directory to the dropbox Files for Analysis folder, whereever it is
 setwd("C:\\Users\\Jorge\\Dropbox\\Shared Ben and Catherine\\DimDivEntire\\Files for Analysis")  ###Change this to the Files for Analysis folder in your dropbox, no need to move it. 
@@ -102,7 +100,8 @@ rownames(mon)<-gsub(" ","_",rownames(mon))
 
 ##########################
 # test matrix and traits #
-comm<-siteXspp[1:100,]
+#Subset data matrix for testing
+comm<-siteXspp[,]
 #traits<-mon     
 ##########################
 
@@ -233,8 +232,7 @@ rownames(null.siteXspp.matrix)[(length(richness_levels)+1):(length(richness_leve
 cl<-makeCluster(8,"SOCK")
 registerDoSNOW(cl)
 
-
-system.time(null_models<-foreach(x=1:50,.combine=rbind,.packages=c("vegan","picante","reshape","foreach")) %dopar% { 
+system.time(null_models<-foreach(x=1:500,.combine=rbind,.packages=c("vegan","picante","reshape","foreach")) %dopar% { 
   print(x)
   null.matrix<-commsimulator(null.siteXspp.matrix,"r0")
   null_beta_metrics<-beta_all(comm=null.matrix,tree=tree,traits=mon,FullMatrix=TRUE)
@@ -475,7 +473,7 @@ colnames(null_dataframe)<-c("To","From",paste(colnames(null_dataframe)[-c(1,2)],
 data.df<-merge(data.merge,null_dataframe,by=c("To","From"))
 
 #Or save data
-save.image("C:/Users/Jorge/Dropbox/Shared Ben and Catherine/DimDivEntire/Output Data/Workspace.RData")
+save.image("C:/Users/Jorge/Dropbox/Shared Ben and Catherine/DimDivRevision/Results/DimDivRevision.rData.RData")
 
 #Data Generation Complete
 ##########################################################################################
@@ -503,7 +501,6 @@ names(range_metrics)<-colnames(data.df)[12:26]
 range_metrics<-melt(range_metrics)
 
 write.csv(range_metrics,"Range_Metrics.csv")
-
 
 #Find Prevalence of each combination
 data_prev<-lapply(colnames(data.df)[27:40],function(x){
@@ -535,10 +532,78 @@ Func_plot<-ggpairs(data.df[,c("Phylosor.Func","PCDp.func","beta_functional")])
 Func_plot
 ggsave("Func_plot.svg")
 
-#Plot each of the metrics with their ranges
 
+###Other Scatter plots of interest
+#Function for spatial lines for all hypothesis
+
+#PCD phylo and PCD Taxonomic
+ggplot(data.df,aes(x=PCDc.phylo,y=PCDp.phylo,col=Elev)) + geom_point() + theme_bw() + scale_color_gradient("Elevation",low="gray90",high="black") + xlab("Taxonomic PCDc") + ylab("Phylogenetic PCDp") + xlim(0,1.8) + ylim(0,1.8) + theme(aspect.ratio=1)
+ggsave("PCDcvPCDpPhylo.svg",height=7,width=7,dpi=300)
+
+#PCD func and PCD Taxonomic
+ggplot(data.df,aes(x=PCDc.func,y=PCDp.func,col=Elev)) + geom_point() + theme_bw() + scale_color_gradient("Elevation",low="gray90",high="black",guide="none") + xlab("Taxonomic PCDc") + ylab("Trait PCDp") + xlim(0,1.8) + ylim(0,1.8) + theme(aspect.ratio=1)
+ggsave("PCDcvPCDpFunc.svg",height=7,width=7,dpi=300)
+
+#PCD func and PCD phylo
+p<-ggplot(data.df,aes(x=PCDp.phylo,y=PCDp.func,col=Elev)) + geom_point() 
+p<-p+ theme_bw() + scale_color_gradient("Elevation",low="gray90",high="black")
+p<-p+ xlab("Phylogenetic PCDp") + ylab("Trait PCDp") + xlim(0,1.8) + ylim(0,1.8) + theme(aspect.ratio=1)
+p
+ggsave("PCDpPhylovPCDpFunc.svg",height=7,width=7.5,dpi=300)
+
+
+#Phylosor v Phylosor
+#PCD func and PCD phylo
+p<-ggplot(data.df,aes(y=Phylosor.Func,x=Phylosor.Phylo,col=Elev)) + geom_point() 
+p<-p+ theme_bw() + scale_color_gradient("Elevation",low="gray90",high="black")
+p<-p+ ylab("Taxonomic Sorenson") + xlab("Phylogenetic Phylosor") + coord_equal()
+p
+ggsave("Phylosor_Elevation.svg",height=7,width=7.5,dpi=300)
+
+#Phylosor v Phylosor
+#PCD func and PCD phylo
+p<-ggplot(data.df,aes(y=Phylosor.Func,x=Phylosor.Phylo,col=Sorenson)) + geom_point() 
+p<-p+ theme_bw() + scale_color_gradient("Sorenson",low="gray90",high="black")
+p<-p+ ylab("Taxonomic Sorenson") + xlab("Phylogenetic Phylosor") + coord_equal()
+p
+ggsave("Phylosor_Taxonomic.svg",height=7,width=7.5,dpi=300)
+
+#
+#PCDp Phylo and hulls
+#PCD func and PCD phylo
+p<-ggplot(data.df,aes(y=beta_functional,x=Phylosor.Phylo,col=Sorenson)) + geom_point() 
+p<-p+ theme_bw() + scale_color_gradient("Sorenson",low="gray90",high="black")
+p<-p+ ylab("Trait Convex Hull") + xlab("Phylogenetic Phylosor") + coord_equal()
+p
+ggsave("PhylosorPhylovConvexHull_Taxonomic.svg",height=7,width=7.5,dpi=300)
+
+#Phylo phylosor and Hulls
+p<-ggplot(data.df,aes(y=beta_functional,x=Phylosor.Phylo,col=Elev)) + geom_point() 
+p<-p+ theme_bw() + scale_color_gradient("Sorenson",low="gray90",high="black")
+p<-p+ ylab("Trait Convex Hull") + xlab("Phylogenetic Phylosor") + coord_equal()
+p
+ggsave("PhylosorPhylovConvexHull_Elevation.svg",height=7,width=7.5,dpi=300)
+
+#Phylo PCDp and Hulls
+p<-ggplot(data.df,aes(y=beta_functional,x=PCDp.phylo,col=Elev)) + geom_point() 
+p<-p+ theme_bw() + scale_color_gradient("Sorenson",low="gray90",high="black")
+p<-p+ ylab("Trait Convex Hull") + xlab("Phylogenetic PCDp") + coord_equal()
+p
+ggsave("PhylosorPhylovConvexHull_Elevation.svg",height=7,width=7.5,dpi=300)
+
+#Phylo PCDp and Hulls
+p<-ggplot(data.df,aes(y=beta_functional,x=PCDp.phylo,col=Sorenson)) + geom_point() 
+p<-p+ theme_bw() + scale_color_gradient("Sorenson",low="gray90",high="black")
+p<-p+ ylab("Trait Convex Hull") + xlab("Phylogenetic PCDp") + coord_equal()
+p
+ggsave("PhylosorPhylovConvexHull_Taxonomic.svg",height=7,width=7.5,dpi=300)
+
+
+##########################################
+#Plot each of the metrics with their ranges
+##########################################
 range_plots<-lapply(12:26,function(x){
-  print(colnames(data.df)[x])
+print(colnames(data.df)[x])
 print(colnames(data.df)[x+15])
 p<-ggplot(data.df,aes(y=data.df[,colnames(data.df)[x]],x=data.df[,colnames(data.df)[x+15]])) + geom_boxplot()
 p<-p+labs(y=colnames(data.df)[x],x=colnames(data.df)[x+15])
@@ -551,19 +616,11 @@ return(p)})
 ###################################################
 
 #Create a function that takes the input of which null metrics you want to use to create output lists
-
 #Create multiple options for the hyplist, hold them in a list and spit them to file seperately
 
-#For testing
-
-Tax<-"Sorenson_Null"
-Phylo<-"PCDp.phylo_Null"
-Func<-"beta_functional_Null"
-
-#Input as names of columns
+setwd("C:\\Users\\Jorge\\Dropbox\\Shared Ben and Catherine\\DimDivRevision\\Results")
 
 Hyplist.func<-function(Tax,Phylo,Func){
-  
   #Create directory
   dir.store<-dir.create(paste(Tax,Phylo,Func,sep="_"))
   setwd(paste(Tax,Phylo,Func,sep="_"))
@@ -579,214 +636,203 @@ Hyplist.func<-function(Tax,Phylo,Func){
   Hyplist<-Hyplist[sapply(Hyplist,nrow) > 1]
   HypBox<-melt(Hyplist, id.vars=c("To","From"),measure.vars=c("Euclid","CostPathCost","AnnualPrecip","Elev"))
   
-###########################As i see it we need two randomization test, to say the difference in elevation is "high" we should compare that to the dataset as a whole.
-#To say that env differences are between hypothesis, we need to swap those labels.
-#1) Are the environmental differences "high" compared to the dataset?
-#Step 1, get the actual mean values for the env variables for each hypothesis
-
-true.median<-sapply(Hyplist,function(x){
-apply(x[,colnames(x) %in% c("Euclid","CostPathCost","AnnualPrecip","Elev")],2,median,na.rm=TRUE)})
-true.median<-as.data.frame(melt(true.median))
-colnames(true.median)<-c("Env","Hyp","value")
-
-#Step 2, get the number of cases in each hypothesis
-todraw<-sapply(Hyplist,nrow)
-
-#The goal is to draw this many rows from the entire dataset at random
-#create parallel cluster
-cl<-makeCluster(8,"SOCK")
-registerDoSNOW(cl)
-
-#run 1000 iterations
-boot.run<-times(1000) %dopar% {
-  require(reshape)
-  require(boot)
+  ###########################As i see it we need two randomization test, to say the difference in elevation is "high" we should compare that to the dataset as a whole.
+  #To say that env differences are between hypothesis, we need to swap those labels.
+  #1) Are the environmental differences "high" compared to the dataset?
+  #Step 1, get the actual mean values for the env variables for each hypothesis
   
-  #drawn the desired number of rows
-  boot.m<-lapply(as.numeric(todraw),function(x){ 
-    rowstodraw<-sample(rownames(data.df),x)
-    boot.rows<-data.df[rowstodraw,]
+  true.median<-sapply(Hyplist,function(x){
+    apply(x[,colnames(x) %in% c("Euclid","CostPathCost","AnnualPrecip","Elev")],2,median,na.rm=TRUE)})
+  true.median<-as.data.frame(melt(true.median))
+  colnames(true.median)<-c("Env","Hyp","value")
+  
+  #Step 2, get the number of cases in each hypothesis
+  todraw<-sapply(Hyplist,nrow)
+  
+  #The goal is to draw this many rows from the entire dataset at random
+  #create parallel cluster
     
-    #find median value for each env variables
-    cbind(apply(boot.rows[,colnames(boot.rows) %in% c("Euclid","CostPathCost","AnnualPrecip","Elev")],2,median,na.rm=T))
-  })
-  names(boot.m)<-names(Hyplist)
-  boot.mean<-melt(boot.m)[,-2]
-  colnames(boot.mean)<-c("Env","Value","Hyp")
-  list(boot.mean)}
-stopCluster(cl)
-
-boot.run<-melt(boot.run)
-
-#Step 3, split boots and true into each combination of Env, Hyp
-split.boot<-split(boot.run,list(boot.run$Env,boot.run$Hyp))
-
-#For each position in the list, i'd like to know the distribution, and whether the true value falls outside the 95% interval. 
-p.values<-lapply(split.boot,function(x){ 
-  
-  CI<-boot.ci(boot(x$value,function(j,i) median(j[i],na.rm=T), R=1000)) 
-  
-  upper<-1-ecdf(x$value) (true.median[true.median$Env==levels(factor(x$Env)) & true.median$Hyp==levels(factor(x$Hyp)),"value"])
-  
-  lower<-ecdf(x$value) (true.median[true.median$Env==levels(factor(x$Env)) & true.median$Hyp==levels(factor(x$Hyp)),"value"])
-  
-  out<-data.frame(levels(factor(x$Env)),levels(factor(x$Hyp)),upper,lower,CI$basic[[4]],CI$basic[[5]])
-  colnames(out)<-c("Env","Hyp","Upper","Lower","CIupper","CIlower")
-  rownames(out)<-NULL
-  return(out)
-})
-
-#now merge the data with the true median
-mean_Env_CI<-merge(rbind.fill(p.values),true.median,by=c("Env","Hyp"))
-mean_Env_CI<-mean_Env_CI[!mean_Env_CI$Env %in% c("Biome","H_mean","Tree","AnnualTemp"),]
-
-#just get the data we use for the paper precip, elev, H-mean, Biome, Euclid, CostPath
-ggplot(data=mean_Env_CI) + geom_point(aes(x=Hyp,y=value,col=Upper < .05 | Lower < .05),size=5) + facet_wrap(~ Env,scales="free_y",nrow=2) + theme_bw() + xlab("Combination of Betadiversity") + ylab("Median") + scale_color_discrete("Significant (.05)") + theme(axis.text.x = element_text(angle = 90))
-ggsave("\Appendix2.jpeg",dpi=300,height=6,width=8)
-
-#Now you have a data frame with the difference in means for all reps and the true stat at the end
-#Our goal is to figure out if its within the 95 CI interval and then cast it as a matrix
-
-######################################
-#Figure Creation and Export
-######################################
-
-#Write hypothesis list to files 
-setwd("C:\\Users\\Jorge\\Dropbox\\Shared Ben and Catherine\\DimDivEntire\\Output Data")
-
-for(x in 1:length(Hyplist.raw)){
-  n<-names(Hyplist.raw[x])
-  write.csv(Hyplist.raw[[x]],paste(n,"rowSwap.csv"),row.names=FALSE)}
-
-#Create Boxplots for all variables across all hypothesis and entire dataset
-setwd("C:\\Users\\Jorge\\Dropbox\\Shared Ben and Catherine\\DimDivEntire\\BoxplotsEntire")
-for (x in 1:length(Evar)){
-  qplot(data=HypBox[HypBox$variable==names(Evar[x]),],x=" ",y=value, geom="boxplot") + facet_grid(.~L1,scale="free_x") + theme_bw() + ylab(paste("Dissim:",names(Evar[x]))) + xlab("") + geom_hline(aes(yintercept=median(data.d[,names(Evar[x])],na.rm=TRUE)),col='red')
-  ggsave(width=12,height=7,paste(names(Evar[x]),"jpeg",sep="."))}
-
-#Just for the CostPath we want log
-qplot(data=HypBox[HypBox$variable=="CostPathCost",],x=L1,y=log(value), geom="boxplot") + theme_bw() +ylab("log(CostPathCost)") + geom_hline(aes(yintercept=log(median(data.d[,"CostPathCost"],na.rm=TRUE))),col='red')
-ggsave(width=12,height=7,paste(names(Evar["CostPathCost"]),"jpeg",sep="."))
-
-#remove duplicates from cross comparison on everything but Cost Path, since thats not bidirectional
-remove.bi<-function(y){
-  y.split<-split(y,y$L1)
-  tofill<-lapply(y.split,function(z){
-    dub<-apply(z,1,function(x){
-      paste(min(x["To"],x["From"]),max(x["To"],x["From"]),sep="_")
+  #run 1000 iterations
+  boot.run<-foreach(x=1:1000,.export="data.df") %do% {
+    
+    require(reshape)
+    require(boot)
+    
+    #drawn the desired number of rows
+    boot.m<-lapply(as.numeric(todraw),function(x){ 
+      rowstodraw<-sample(rownames(data.df),x)
+      boot.rows<-data.df[rowstodraw,]
+      
+      #find median value for each env variables
+      cbind(apply(boot.rows[,colnames(boot.rows) %in% c("Euclid","CostPathCost","AnnualPrecip","Elev")],2,median,na.rm=T))
     })
-    out<-z[!duplicated(dub),]
-    return(out)})
-  return(rbind.fill(tofill))}
-
-AnPrecip<-remove.bi(HypBox[HypBox$variable=="AnnualPrecip",])
-AnPrecip$variable<-"Precipitation (mm)"
-Elev.<-remove.bi(HypBox[HypBox$variable=="Elev",])
-Elev.$variable<-"Elevation (m)"
-Euclid.<-remove.bi(HypBox[HypBox$variable=="Euclid",])
-Euclid.$variable="Euclid (km)"
-
-
-library(gridExtra)
-Precip<-qplot(data=AnPrecip,x=L1,y=value, geom="boxplot") + theme_bw() + ylab("") + geom_hline(aes(yintercept=median(data.d[,"AnnualPrecip"],na.rm=TRUE)),col='grey40',linetype="dashed") + opts( axis.text.y = theme_blank()) + xlab("") + coord_flip()
-ggsave("Precip.jpeg")
-Elev<-qplot(data=Elev.,x=L1,y=value, geom="boxplot") + theme_bw() + ylab("") + geom_hline(aes(yintercept=median(data.d[,"Elev"],na.rm=TRUE)), linetype="dashed",col='grey40') + opts( axis.text.y = theme_blank()) + xlab("") + coord_flip()
-ggsave("Elev.jpeg")
-Euclid<-qplot(data=Euclid.,x=L1,y=value, geom="boxplot") + theme_bw() + ylab("") + geom_hline(aes(yintercept=median(data.d[,"Euclid"],na.rm=TRUE)), linetype="dashed",col='grey40') + opts( axis.text.y = theme_blank()) + xlab("") + coord_flip()
-ggsave("Euclid.jpeg",height=3,width=10,dpi=300)
-#note outliers
-CostC<-qplot(data=HypBox[HypBox$variable=="CostPathCost",],x=L1,y=value, geom="boxplot") + theme_bw() + ylab("") + geom_hline(aes(yintercept=median(data.d[,"CostPathCost"],na.rm=TRUE)), linetype="dashed",col='grey40') + opts( axis.text.y = theme_blank()) + xlab("") + coord_flip() + ylim(0,7.5e8)
-ggsave("CostC.jpeg")
-
-#Or try it rbind
-#I want to remove those extreme CostPath Values, everyhitng above 1e9
-#Only two data points out there, make sure to put in figure legend.
-CostC.<-HypBox[HypBox$variable=="CostPathCost",]
-CostC.<-CostC.[CostC.$value < 1e9,]
-CostC.$variable<-"Cost Path"
-
-#THe names need to match with the entire dataset
-levels(HypBox$variable)[8]<-"Cost Path"
-levels(HypBox$variable)[7]<-"Euclid (km)"
-levels(HypBox$variable)[1]<-"Precipitation (mm)"
-levels(HypBox$variable)[2]<-"Elevation (m)"
-
-toplot<-rbind(AnPrecip,Elev.,Euclid.,CostC.)
-colnames(toplot)<-c("To","From","env","val","hyp")
-toplot$env<-as.factor(toplot$env)
-intercepts<-aggregate(toplot$val,list(toplot$env),median,na.rm=T)
-colnames(intercepts)<-c("env","int")
-ggplot(toplot) + geom_boxplot(aes(hyp,val)) + theme_bw() + theme(axis.text.x=element_blank()) + xlab("") + geom_hline(data=intercepts,aes(yintercept=int,group=env), linetype="dashed",col='grey40') + ylab("") + facet_wrap(~env,scales="free")
-ggsave("FacetBoxRowSwap10quant.pdf",dpi=300,height=8,width=12)
-
-
-#Draw Lines between all hypothesis one sites
-setwd("C:\\Users\\Jorge\\Dropbox\\Shared Ben and Catherine\\DimDivEntire\\Files for Analysis")  ###Change this to the Files for Analysis folder in your dropbox, no need to move it. 
-elevr<-raster("studyarea_1km.tif")
-
-#Function for spatial lines for all hypothesis, overlayed on an Ecuador Map
-setwd("C:\\Users\\Jorge\\Dropbox\\Shared Ben and Catherine\\DimDivEntire\\LineMaps90")
-
-#Lines for each hypothesis, plotted individually
-for (f in 1:length(Hyplist.raw)){
-  jpeg(paste(names(Hyplist.raw)[f],"RowSwap.jpeg",sep=""),height= 10, width = 10, unit="in", res=300)
-  coords<-apply(Hyplist.raw[[f]],1,function(x){
-    x_stat<-Envtable[Envtable$CommID %in% as.numeric(x["To"]),c("LatDecDeg","LongDecDeg")]
-    y_stat<-Envtable[Envtable$CommID %in% as.numeric(x["From"]),c("LatDecDeg","LongDecDeg")]
-    comb<-data.frame(x_stat,y_stat)
-    colnames(comb)<-c("xmin","ymin","xmax","ymax")
-    return(comb)
-  })
-  cordmatrix<-rbind.fill(coords)
-  plot(elevr, axes=FALSE,main="",legend=F,col=colorRampPalette(c("grey90", "grey6"))(255))
-  for (j in 1:nrow(cordmatrix)) {
-    arrows(y0=cordmatrix[j,1],x0=cordmatrix[j,2],y1=cordmatrix[j,3],x1=cordmatrix[j,4],length=0, lwd=1,col="grey20")}
-  points(loc, col='grey20', pch=15,cex=.5)
-  dev.off()
-}
-
-Hyplist.raw<-Hyplist.raw[sapply(Hyplist.raw,nrow) > 2]
-
-# Together on one graph, if needed.
-jpeg("AllhypothesisRowSwap.jpeg",quality=100,res=300,units="in",height=12,width=20)
-par(mfrow=c(2,4))
-
-#Plot lines
-
-for (x in 1:length(Hyplist.raw)){
-  coords<-apply(Hyplist.raw[[x]],1,function(x){
-    x_stat<-Envtable[Envtable$CommID %in% as.numeric(x["To"]),c("LatDecDeg","LongDecDeg")]
-    y_stat<-Envtable[Envtable$CommID %in% as.numeric(x["From"]),c("LatDecDeg","LongDecDeg")]
-    comb<-cbind(x_stat,y_stat)
-    colnames(comb)<-c("xmin","xmax","ymin","ymax")
-    return(comb)
-  })
-  cordmatrix<-rbind.fill(coords)
-  plot(elevr, axes=TRUE, main=names(Hyplist.raw)[x])
-  points(loc, col='red', pch=10,cex=.5)
-  for (x in 1:nrow(cordmatrix)) {
-    arrows(y0=cordmatrix[x,1],x0=cordmatrix[x,2],y1=cordmatrix[x,3],x1=cordmatrix[x,4],length=0, lwd=1)
+    names(boot.m)<-names(Hyplist)
+    boot.mean<-melt(boot.m)[,-2]
+    colnames(boot.mean)<-c("Env","Value","Hyp")
+    list(boot.mean)}
+  
+  boot.run<-melt(boot.run)
+  
+  #Step 3, split boots and true into each combination of Env, Hyp
+  split.boot<-split(boot.run,list(boot.run$Env,boot.run$Hyp))
+  
+  #For each position in the list, i'd like to know the distribution, and whether the true value falls outside the 95% interval. 
+  p.values<-lapply(split.boot,function(x){ 
     
+    CI<-boot.ci(boot(x$value,function(j,i) median(j[i],na.rm=T), R=1000)) 
+    upper<-1-ecdf(x$value) (true.median[true.median$Env==levels(factor(x$Env)) & true.median$Hyp==levels(factor(x$Hyp)),"value"])
+    lower<-ecdf(x$value) (true.median[true.median$Env==levels(factor(x$Env)) & true.median$Hyp==levels(factor(x$Hyp)),"value"])
+    
+    out<-data.frame(levels(factor(x$Env)),levels(factor(x$Hyp)),upper,lower,CI$basic[[4]],CI$basic[[5]])
+    colnames(out)<-c("Env","Hyp","Upper","Lower","CIupper","CIlower")
+    rownames(out)<-NULL
+    return(out)
+  })
+  
+  #now merge the data with the true median
+  mean_Env_CI<-merge(rbind.fill(p.values),true.median,by=c("Env","Hyp"))
+  mean_Env_CI<-mean_Env_CI[!mean_Env_CI$Env %in% c("Biome","H_mean","Tree","AnnualTemp"),]
+  
+  #just get the data we use for the paper precip, elev, H-mean, Biome, Euclid, CostPath
+  ggplot(data=mean_Env_CI) + geom_point(aes(x=Hyp,y=value,col=Upper < .05 | Lower < .05),size=5) + facet_wrap(~ Env,scales="free_y",nrow=2) + theme_bw() + xlab("Combination of Betadiversity") + ylab("Median") + scale_color_discrete("Significant (.05)") + theme(axis.text.x = element_text(angle = 90))
+  ggsave("Appendix2.jpeg",dpi=300,height=6,width=8)
+  
+  #Now you have a data frame with the difference in means for all reps and the true stat at the end
+  #Our goal is to figure out if its within the 95 CI interval and then cast it as a matrix
+  
+  ######################################
+  #Figure Creation and Export
+  ######################################
+  
+  for(x in 1:length(Hyplist)){
+    n<-names(Hyplist[x])
+    write.csv(Hyplist[[x]],paste(n,"rowSwap.csv"),row.names=FALSE)}
+  
+  #####################################
+  #Boxplots
+  #####################################
+  
+  #Create Boxplots for all variables across all hypothesis and entire dataset
+  dir.create("2wayplots")
+  setwd("2wayplots")
+  
+  plots.hold<-list()
+  for (x in 1:length(levels(HypBox$variable))){
+    print(x)
+    p<-qplot(data=HypBox[HypBox$variable==levels(HypBox$variable)[[x]],],x=" ",y=value, geom="boxplot") + facet_grid(.~L1,scale="free_x") + theme_bw() + ylab(paste("Dissim:",names(Evar[x]))) + xlab("") + geom_hline(aes(yintercept=median(data.df[,levels(HypBox$variable)[x]],na.rm=TRUE)),col='red')
+    ggsave(plot=p,width=12,height=7,paste(levels(HypBox$variable)[[x]],"jpeg",sep="."))
+    plots.hold[[x]]<-p
   }
+  
+  #Show three way combinations only.
+  #Remove all random combinations
+  remove.level<-levels(as.factor(HypBox$L1))[str_detect(levels(as.factor(HypBox$L1)),"Random")]
+  HypBox<-HypBox[!HypBox$L1 %in% remove.level,]
+  
+  setwd("C:\\Users\\Jorge\\Dropbox\\Shared Ben and Catherine\\DimDivRevision\\Results")
+  setwd(paste(Tax,Phylo,Func,sep="_"))
+  dir.create("3WayBoxplots")
+  setwd("3WayBoxplots")
+    
+  ###############################################
+  #To do, remove outlier values from CostPath!!
+  ###############################################
+  
+  ##Create Boxplots
+  plots.hold.3d<-list()
+  for (x in 1:length(levels(HypBox$variable))){
+    print(x)
+    p<-qplot(data=HypBox[HypBox$variable==levels(HypBox$variable)[[x]],],x=" ",y=value, geom="boxplot") + facet_grid(.~L1,scale="free_x") + theme_bw() + ylab(paste("Dissim:",levels(HypBox$variable)[[x]])) + xlab("") + geom_hline(aes(yintercept=median(data.df[,levels(HypBox$variable)[x]],na.rm=TRUE)),col='red')
+    ggsave(plot=p,width=12,height=7,paste(levels(HypBox$variable)[[x]],"jpeg",sep="."))
+    ggsave(plot=p,width=12,height=7,paste(levels(HypBox$variable)[[x]],"jpeg",sep="."))
+    plots.hold.3d[[x]]<-p
+  }
+  
+  #Get the medians
+  colnames(HypBox)<-c("To","From","Diss","value","Hyp")
+  intercepts<-aggregate(HypBox$value,list(HypBox$Diss),median,na.rm=T)
+  colnames(intercepts)<-c("Diss","value")
+  
+  #Plot all simultanously, need to get intercepts on the plot?
+  
+  ggplot(HypBox,aes(x=Hyp,y=value)) + geom_boxplot() + facet_wrap(~Diss,scales="free") + theme(axis.text.x = element_text(angle = 90, hjust = 1)) + geom_hline(data=intercepts,aes(yintercept=value,group=Diss), linetype="dashed",col='grey40') + theme_bw()
+  ggsave("Env3Boxplots.svg",dpi=300,height=8,width=12)
+  ggsave("Env3Boxplots.jpeg",dpi=300,height=8,width=12)
+  
+  #Draw Lines between all hypothesis one sites
+  elevr<-raster("C:\\Users\\Jorge\\Dropbox\\Shared Ben and Catherine\\DimDivEntire\\Files for Analysis\\studyarea_1km.tif")
+  
+  #Function for spatial lines for all hypothesis, overlayed on an Ecuador Map
+  
+  #ugly function to get to the directory level, sorry. 
+  setwd("C:\\Users\\Jorge\\Dropbox\\Shared Ben and Catherine\\DimDivRevision\\Results")
+  setwd(paste(Tax,Phylo,Func,sep="_"))
+  dir.create("Maps")
+  setwd("Maps")
+  
+  #Lines for each hypothesis, plotted individually
+  cl<-makeCluster(8,"SOCK")
+  maps.Hyp<-foreach(f=1:length(Hyplist),.packages=c("reshape","raster","rgdal"),) %dopar% {
+    jpeg(paste(names(Hyplist)[f],"RowSwap.jpeg",sep=""),height= 10, width = 10, unit="in", res=300)
+    coords<-apply(Hyplist[[f]],1,function(x){
+      x_stat<-Envtable[Envtable$CommID %in% as.numeric(x["To"]),c("LatDecDeg","LongDecDeg")]
+      y_stat<-Envtable[Envtable$CommID %in% as.numeric(x["From"]),c("LatDecDeg","LongDecDeg")]
+      comb<-data.frame(x_stat,y_stat)
+      colnames(comb)<-c("xmin","ymin","xmax","ymax")
+      return(comb)
+    })
+    cordmatrix<-rbind.fill(coords)
+    plot(elevr, axes=FALSE,main="",legend=F,col=colorRampPalette(c("grey90", "grey6"))(255))
+    for (j in 1:nrow(cordmatrix)) {
+      arrows(y0=cordmatrix[j,1],x0=cordmatrix[j,2],y1=cordmatrix[j,3],x1=cordmatrix[j,4],length=0, lwd=1,col="grey20")}
+    points(loc, col='grey20', pch=15,cex=.5)
+    dev.off()
+  }
+  stopCluster(cl)
+  
+  Hyplist<-Hyplist[sapply(Hyplist,nrow) > 2]
+  
+  # Together on one graph, if needed.
+  jpeg("AllhypothesisRowSwap.jpeg",quality=100,res=300,units="in",height=12,width=20)
+  par(mfrow=c(2,4))
+  
+  #Plot lines
+  
+  for (x in 1:length(Hyplist)){
+    coords<-apply(Hyplist[[x]],1,function(x){
+      x_stat<-Envtable[Envtable$CommID %in% as.numeric(x["To"]),c("LatDecDeg","LongDecDeg")]
+      y_stat<-Envtable[Envtable$CommID %in% as.numeric(x["From"]),c("LatDecDeg","LongDecDeg")]
+      comb<-cbind(x_stat,y_stat)
+      colnames(comb)<-c("xmin","xmax","ymin","ymax")
+      return(comb)
+    })
+    cordmatrix<-rbind.fill(coords)
+    plot(elevr, axes=TRUE, main=names(Hyplist)[x])
+    points(loc, col='red', pch=10,cex=.5)
+    for (x in 1:nrow(cordmatrix)) {
+      arrows(y0=cordmatrix[x,1],x0=cordmatrix[x,2],y1=cordmatrix[x,3],x1=cordmatrix[x,4],length=0, lwd=1)
+      
+    }
+  }
+  dev.off()
+  
+  
+  ###Done
+  #save data from that run
+  setwd("C:\\Users\\Jorge\\Dropbox\\Shared Ben and Catherine\\DimDivRevision\\Results")
+  setwd(paste(Tax,Phylo,Func,sep="_"))
+  
+  save.image("plotting.Rdata")
 }
-dev.off()
+
+#Run the plotting function for all sets of hypothesis
 
 
-#Plot residuals of PCD
-head(data.d)
+Hyplist.func(Tax="Sorenson_Null",Phylo="PCDp.phylo_Null",Func="beta_functional_Null")
 
-#Function for spatial lines for all hypothesis
-setwd("C:\\Users\\Jorge\\Dropbox\\Shared Ben and Catherine\\DimDivEntire\\Output Data")
 
-ggplot(data.d,aes(x=PCDc,y=PCDp,col=Elev)) + geom_point() + theme_bw() + scale_color_gradient("Elevation",low="gray90",high="black") + xlab("Taxonomic") + ylab("Phylogenetic") + ylim(0,1.8) + xlim(0,1.8)
-ggsave("CvP.pdf",height=7,width=7,dpi=300)
+Hyplist.func(Tax="Sorenson_Null",Phylo="Phylosor.Phylo_Null",Func="beta_functional_Null")
+Hyplist.func(Tax="PCDc.phylo_Null",Phylo="PCDp.phylo_Null",Func="beta_functional_Null")
 
-ggplot(data.d,aes(x=PCDc,y=PCDp.f,col=Elev)) + geom_point() + theme_bw() + scale_color_gradient("Elevation",low="gray90",high="black",guide="none") + xlab("Taxonomic") + ylab("Trait") + ylim(0,1.8) + xlim(0,1.8)
-ggsave("CvF.pdf",height=7,width=7,dpi=300)
 
-ggplot(data.d,aes(x=PCDp,y=PCDp.f,col=Elev)) + geom_point() + theme_bw() + scale_color_gradient("Elevation",low="gray90",high="black") + xlab("Phylogenetic") + ylab("Trait") + ylim(0,1.8) + xlim(0,1.8) + geom_abline()
-ggsave("PvT.pdf",height=7,width=7.5,dpi=300)
-
-}
-
-###Done
+save.image("C:/Users/Jorge/Dropbox/Shared Ben and Catherine/DimDivEntire/Output Data/Workspace.RData")
