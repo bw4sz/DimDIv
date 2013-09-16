@@ -19,7 +19,13 @@ true_cor<-sapply(colnames(data.d), function(x){ sapply(colnames(data.env),functi
   cor(data.d[,x],data.env[,y],method="spearman",use="complete.obs")
 })})
 
-write.csv(true_cor,"True_Cor.csv")
+write.csv(true_cor,"Env_Cor.csv")
+
+metric_cor<-sapply(colnames(data.d), function(x){ sapply(colnames(data.d),function(y){
+  cor(data.d[,x],data.df[,y],method="spearman",use="complete.obs")
+})})
+
+write.csv(metric_cor,"Metric_Cor.csv")
 
 true_cor<-abs(true_cor)
 
