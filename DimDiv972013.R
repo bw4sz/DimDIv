@@ -654,8 +654,6 @@ p
 ggsave("Phylosor_Taxonomic.svg",height=7,width=7.5,dpi=300)
 
 
-
-
 #MNTD and hulls
 p<-ggplot(data.df,aes(y=beta_functional,x=MNTD,col=Sorenson)) + geom_point() 
 p<-p+ theme_bw() + scale_color_gradient("Sorenson",low="gray90",high="black")
@@ -1017,7 +1015,7 @@ p<-ggplot(na.omit(TraitC),aes(x=value,fill=variable)) + geom_bar(col="black",pos
 p + scale_color_continuous(guide='none') + ylab("Prevalence") + xlab("")
 ggsave("Traitmetrics.svg",dpi=300,height=8,width=11)
 
-save.image("C:/Users/Jorge/Dropbox/Shared Ben and Catherine/DimDivEntire/Output Data/Workspace.RData")
+save.image("C:/Users/Jorge/Dropbox/Shared Ben and Catherine/DimDivRevision/Results/DimDivRevision.rData.RData")
 
 #detach our overnight sink
 sink()
