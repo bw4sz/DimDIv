@@ -21,6 +21,7 @@ require(FD)
 require(fields)
 require(GGally)
 require(stringr)
+require(scales)
 ###########################
 ###############Read in data
 ###########################
@@ -278,6 +279,9 @@ test.Evar<-melt(Evar.m)
 compare.env<-cast(test.Evar,X1+X2~L1)
 colnames(compare.env)<-c("To","From",names(compare.env[-c(1,2)]))
 
+#save to file
+save.image("C:/Users/Jorge/Dropbox/Shared Ben and Catherine/DimDivEntire/Output Data/Workspace.RData")
+
 ######################################################
 #Create a function for computing betadiversity metrics
 #######################################################
@@ -452,6 +456,8 @@ system.time(beta_metrics<-beta_all(comm=comm,tree=tree,traits=mon,FullMatrix=FAL
                             
 #Visualizations of the beta metrics
 head(beta_metrics)
+
+save.image("C:/Users/Jorge/Dropbox/Shared Ben and Catherine/DimDivEntire/Output Data/Workspace.RData")
 
 #################################################################################
 #################################################################################
@@ -977,7 +983,7 @@ m.dat$L1<-gsub("_Null","",m.dat$L1)
 
 #all possible combinations
 ggplot(m.dat,aes(fill=L1,y=Prevalence,x=Hyp)) +geom_bar(position="dodge") + theme(axis.text.x = element_text(angle = 90, hjust = 1)) + facet_wrap(~Hyp,scales="free_x") + scale_x_discrete(labels="") + labs(fill="Metrics") + theme_bw()
-ggsave("Metric_compare.jpeg")
+ggsave("Metric_compare.jpeg",height=8,width=12)
 
 
 #Without random combinations
@@ -985,15 +991,31 @@ m.datNoRandom<-m.dat[!m.dat$Hyp %in% levels(m.dat$Hyp)[str_detect(levels(m.dat$H
 
 
 ggplot(m.datNoRandom,aes(fill=L1,y=Prevalence,x=Hyp)) +geom_bar(position="dodge") + theme(axis.text.x = element_text(angle = 90, hjust = 1)) + facet_wrap(~Hyp,scales="free_x") + scale_x_discrete(labels="") + labs(fill="Metrics") + theme_bw()
-ggsave("Metric_compareNorandom.jpeg")
+ggsave("Metric_compareNorandom.jpeg",height=8,width=11)
 
 #plot dimensions of betadiversity
 dim_beta<-aggregate(m.dat$Prevalence,list(m.dat$Combination,m.dat$Betadiversity,m.dat$L1),sum)
 colnames(dim_beta)<-c("Combination","Betadiversity","Metrics","Prevalence")
 ggplot(dim_beta,aes(fill=Metrics,y=Prevalence,x=Combination)) + geom_bar(position="dodge")+ facet_wrap(~Betadiversity
 ) + theme_bw() + labs(fill="Metrics")
-ggsave("MetricComponents.jpeg")
+ggsave("MetricComponents.jpeg",height=8,width=11)
 
+#Another way to look at components
+#Taxonomic
+TaxC<-melt(data.df,id.var=c("To","From"),measure.vars=c("Sorenson_Null","PCDc.phylo_Null"))
+p<-ggplot(TaxC,aes(x=value,fill=variable)) + geom_bar(col="black",position="dodge",aes(y=(..count..)/23871)) + labs(fill="Metric") + scale_y_continuous(label = percent) + theme_bw() + scale_fill_brewer(palette="Greys")
+p + scale_color_continuous(guide='none') + ylab("Prevalence") + xlab("")
+ggsave("Taxmetrics.svg",dpi=300,height=8,width=11)
+
+PhyloC<-melt(data.df,id.var=c("To","From"),measure.vars=c("PCDp.phylo_Null","Phylosor.Phylo_Null"))
+p<-ggplot(na.omit(PhyloC),aes(x=value,fill=variable)) + geom_bar(col="black",position="dodge",aes(y=(..count..)/23871)) + labs(fill="Metric") + scale_y_continuous(label = percent) + theme_bw() + scale_fill_brewer(palette="Greys")
+p + scale_color_continuous(guide='none') + ylab("Prevalence") + xlab("")
+ggsave("Phylometrics.svg",dpi=300,height=8,width=11)
+
+TraitC<-melt(data.df,id.var=c("To","From"),measure.vars=c("PCDp.func_Null","Phylosor.Func_Null","beta_functional_Null",'MNTD_Null'))
+p<-ggplot(na.omit(TraitC),aes(x=value,fill=variable)) + geom_bar(col="black",position="dodge",aes(y=(..count..)/23871)) + labs(fill="Metric") + scale_y_continuous(label = percent) + theme_bw() + scale_fill_brewer(palette="Greys")
+p + scale_color_continuous(guide='none') + ylab("Prevalence") + xlab("")
+ggsave("Traitmetrics.svg",dpi=300,height=8,width=11)
 
 save.image("C:/Users/Jorge/Dropbox/Shared Ben and Catherine/DimDivEntire/Output Data/Workspace.RData")
 
