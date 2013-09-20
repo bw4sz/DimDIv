@@ -14,7 +14,7 @@ data.d<-data.df[,colnames(data.df) %in% c("beta_functional","Phylosor.Phylo","Ph
 
 #Get the colums we want to run in env
 #Set 1: Get the correlations from the dataset 
-data.env<-data.df[,colnames(data.df) %in% c("AnnualPrecip","AnnualTemp", "CostPathCost","DeltaElevEuclid","H_mean","Tree","Euclid")]
+data.env<-data.df[,colnames(data.df) %in% c("AnnualPrecip","Elev", "CostPathCost","DeltaElevEuclid","H_mean","Tree","Euclid")]
 true_cor<-sapply(colnames(data.d), function(x){ sapply(colnames(data.env),function(y){
   cor(data.d[,x],data.env[,y],method="spearman",use="complete.obs")
 })})
