@@ -27,13 +27,13 @@ require(scales)
 ###########################
 
 #sink output for overnight runs so we can see it tomorrow
-sink("C:/Users/Jorge/Dropbox/Shared Ben and Catherine/DimDivRevision/Results/OvernightOutput.txt")
+sink("C:/Users/Ben/Dropbox/Shared Ben and Catherine/DimDivRevision/Results/OvernightOutput.txt")
 #load data if desired
-load("C:/Users/Jorge/Dropbox/Shared Ben and Catherine/DimDivRevision/Results/DimDivRevision.rData.RData")
+load("C:/Users/Ben/Dropbox/Shared Ben and Catherine/DimDivRevision/Results/DimDivRevision.RData")
 
 ###Define Source Functions
 
-source("C:/Users/Jorge/Dropbox/Scripts/DimDiv/Scripts/geb12021-sup-0004-si.R.txt")
+source("C:/Users/Ben/Dropbox/Scripts/DimDiv/Scripts/geb12021-sup-0004-si.R.txt")
 #Function is called beta tf
 
 lappend <- function(lst, obj) {
@@ -52,10 +52,10 @@ Getsplist<-function(commID){
 ##########################################################
 
 #Load in the data
-#load("C:/Users/Jorge/Dropbox/Shared Ben and Catherine/DimDivEntire/Output Data/Workspace.RData")
+#load("C:/Users/Ben/Dropbox/Shared Ben and Catherine/DimDivEntire/Output Data/Workspace.RData")
 
 ##set correct working directory to the dropbox Files for Analysis folder, whereever it is
-setwd("C:\\Users\\Jorge\\Dropbox\\Shared Ben and Catherine\\DimDivEntire\\Files for Analysis")  ###Change this to the Files for Analysis folder in your dropbox, no need to move it. 
+setwd("C:\\Users\\Ben\\Dropbox\\Shared Ben and Catherine\\DimDivEntire\\Files for Analysis")  ###Change this to the Files for Analysis folder in your dropbox, no need to move it. 
 
 #Read in species matrix
 siteXspp <- read.csv("siteXspp_Oct20_2011.csv", row.names=1)
@@ -80,7 +80,7 @@ tree.func<-read.tree("func.tre")
 #plot.phylo(tree.func, cex=.8, tip.color=as.numeric(as.factor(col.clade)))
 
 #bring in traits
-morph <- read.csv("C:\\Users\\Jorge\\Dropbox\\Lab paper 1 Predicted vs observed assemblages\\MorphologyShort.csv",na.strings="9999")
+morph <- read.csv("C:\\Users\\Ben\\Dropbox\\Lab paper 1 Predicted vs observed assemblages\\MorphologyShort.csv",na.strings="9999")
 
 #just get males
 morph.male<-morph[morph$Sex=="Macho",c("SpID","ExpC","Peso","AlCdo")]
@@ -97,15 +97,13 @@ mon<-mon[,-1]
 rownames(mon)<-gsub(" ","_",rownames(mon))
 
 
-
 ##################################
 #Define Function to Compare Metrics
 ###################################
-set.seed(100)
-comm<-siteXspp[sample(1:nrow(siteXspp)),]
+comm<-siteXspp[sample(1:nrow(siteXspp),20),]
 
 
-beta_all<-function(comm,tree,traits,FullMatrix){
+beta_all<-function(comm,tree,traits,cores){
 
 #Phylogenetic PCD
 PCD.phylo<-pcd(comm,tree)
@@ -174,20 +172,19 @@ mon_cut<-traits[rownames(traits) %in% colnames(comm),]
 siteXspp_traits<-comm[,colnames(comm) %in% rownames(mon_cut)]
                   
 #get all pairwise combinations of sites, depending if you want a full matrix (null) or sparse matrix (observed values)
-if(FullMatrix==FALSE){pair.w<-combn(rownames(siteXspp_traits),2,simplify=FALSE)}
-if(FullMatrix==TRUE){
-  #Get the combinations of the null model, we only want  "A" compared to "B"
-  pair.w<-expand.grid(rownames(comm)[1:length(richness_levels)],rownames(comm)[(length(richness_levels)+1):(length(richness_levels)*2)])
-  pair.w<- as.list(as.data.frame(t(pair.w)))
-}
+pair.w<-combn(rownames(siteXspp_traits),2,simplify=FALSE)
+
 
 #loop through all pairs of assemblages and get the functional overlap
-pairwise.beta<-foreach(x=pair.w,.packages=c("vegan","reshape"),.errorhandling="pass") %do%{
-  source("C:/Users/Jorge/Dropbox/Scripts/DimDiv/Scripts/geb12021-sup-0004-si.R.txt")
+cl<-makeCluster(cores,"SOCK")
+registerDoSNOW(cl)
+system.time(pairwise.beta<-foreach(x=pair.w,.packages=c("vegan","reshape"),.errorhandling="pass") %dopar%{
+  source("C:/Users/Ben/Dropbox/Scripts/DimDiv/Scripts/geb12021-sup-0004-si.R.txt")
   Villeger<-beta_TF(siteXspp_traits[rownames(siteXspp_traits) %in% x,] ,as.matrix(mon_cut))$beta
   Villeger<-melt(Villeger)
   cast(Villeger,~X1+X2)
-  }
+  })
+stopCluster(cl)
 
 toremove<-sapply(pairwise.beta,function(x) is.character(x[[1]]))
 
@@ -215,7 +212,7 @@ Allmetrics<-merge(func.beta,Phylo_Tax,by=c("To","From"))
 
 prc_traits<-prcomp(mon_cut)
 newSGdist <- dist(prc_traits$x)
-source("C:/Users/Jorge/Documents/DimDiv/BenHolttraitDiversity.R")
+source("C:/Users/Ben/Documents/DimDiv/BenHolttraitDiversity.R")
 
 #create sp.list
 sp.list<-apply(siteXspp_traits,1,function(x){
@@ -261,48 +258,22 @@ colnames(Allmetrics2)[16:18]<-c("PCD.func","PCDc.func","PCDp.func")
 
 return(Allmetrics2)}
 
-system.time(beta_metrics<-beta_all(comm=comm,tree=tree,traits=mon,FullMatrix=FALSE))
+system.time(beta_metrics<-beta_all(comm=comm,tree=tree,traits=mon,cores=3))
                             
 #Visualizations of the beta metrics
 head(beta_metrics)
 
-save.image("C:/Users/Jorge/Dropbox/Shared Ben and Catherine/DimDivEntire/Output Data/Workspace.RData")
+save.image("C:/Users/Ben/Dropbox/Shared Ben and Catherine/DimDivRevision/Results/CompareMetrics.RData")
 
 ##########################################################################################
 #Tables and Statistics
 #########################################################################################
 data.df<-beta_metrics
 
-setwd("C:\\Users\\Jorge\\Dropbox\\Shared Ben and Catherine\\DimDivRevision\\Results")
+setwd("C:\\Users\\Ben\\Dropbox\\Shared Ben and Catherine\\DimDivRevision\\Results")
 
-#Get the bounds of each 
-range_metrics<-list()
-
-for(x in 0:15){
-  print(x)
-range_min<-aggregate(data.df[,12+x],list(data.df[,28+x]),min,na.rm=TRUE)
-range_max<-aggregate(data.df[,12+x],list(data.df[,28+x]),max,na.rm=TRUE)
-
-range_val<-data.frame(Index=range_min[,1],Min=range_min[,2],Max=range_max[,2])
-range_metrics[[x+1]]<-range_val
-}
-
-names(range_metrics)<-colnames(data.df)[12:27]
-range_metrics<-melt(range_metrics)
-
-write.csv(range_metrics,"Range_Metrics.csv")
-
-#Find Prevalence of each combination
-data_prev<-lapply(colnames(data.df)[28:42],function(x){
-range_prev<-table(data.df[,x])/nrow(data.df)})
-
-names(data_prev)<-colnames(data.df)[28:42]
-data_prev<-melt(data_prev)
-data_prev<-cast(data_prev,L1~Var.1)
-rownames(data_prev)<-data_prev[,1]
-data_prev<-data_prev[,-1]
-
-write.csv(round(data_prev,3)*100,"NullPrevalence.csv")
+dir.create("CompareMetrics")
+setwd("CompareMetrics")
 
 ###################################################
 #correlation and comparisons
@@ -343,7 +314,6 @@ p<-p+ xlab("Phylogenetic PCDp") + ylab("Trait PCDp") + xlim(0,1.8) + ylim(0,1.8)
 p
 ggsave("PCDpPhylovPCDpFunc.svg",height=7,width=7.5,dpi=300)
 
-
 #Phylosor v Phylosor
 #PCD func and PCD phylo
 p<-ggplot(data.df,aes(y=Phylosor.Func,x=Phylosor.Phylo,col=Elev)) + geom_point() 
@@ -359,7 +329,6 @@ p<-p+ theme_bw() + scale_color_gradient("Sorenson",low="gray90",high="black")
 p<-p+ ylab("Taxonomic Sorenson") + xlab("Phylogenetic Phylosor") + coord_equal()
 p
 ggsave("Phylosor_Taxonomic.svg",height=7,width=7.5,dpi=300)
-
 
 #MNTD and hulls
 p<-ggplot(data.df,aes(y=beta_functional,x=MNTD,col=Sorenson)) + geom_point() 
@@ -412,103 +381,14 @@ p<-p+ ylab("Trait Convex Hull") + xlab("Phylogenetic PCDp") + coord_equal()
 p
 ggsave("PhylosorPhylovConvexHull_Taxonomic.svg",height=7,width=7.5,dpi=300)
 
-##########################################
-#Plot each of the metrics with their ranges
-##########################################
-range_plots<-lapply(12:26,function(x){
-print(colnames(data.df)[x])
-print(colnames(data.df)[x+15])
-p<-ggplot(data.df,aes(y=data.df[,colnames(data.df)[x]],x=data.df[,colnames(data.df)[x+15]])) + geom_boxplot()
-p<-p+labs(y=colnames(data.df)[x],x=colnames(data.df)[x+15])
-filnam<-paste(colnames(data.df)[x],"_range.jpeg")
-ggsave(filnam,plot=p,height=7,width=5,dpi=300)
-return(p)})
-
-
 ###############################
 #Correlation
 ###############################
 #Just get the columns we want to run in the metrics
-data.d<-data.df[,colnames(data.df) %in% c("beta_functional","Phylosor.Phylo","Phylosor.Func","Sorenson","PCDp.phylo","PCDp.func")]
+data.d<-data.df[,colnames(data.df) %in% c("beta_functional","Phylosor.Phylo","Phylosor.Func","Sorenson","PCDp.phylo","PCDp.func","MNTD")]
 
-#Get the colums we want to run in env
-#Set 1: Get the correlations from the dataset 
-data.env<-data.df[,colnames(data.df) %in% c("AnnualPrecip","Elev", "CostPathCost","DeltaElevEuclid","H_mean","Tree","Euclid")]
-true_cor<-sapply(colnames(data.d), function(x){ sapply(colnames(data.env),function(y){
-  cor(data.d[,x],data.env[,y],method="spearman",use="complete.obs")
+metric_cor<-sapply(colnames(data.d), function(x){ sapply(colnames(data.d),function(y){
+  cor(data.d[,x],data.df[,y],method="spearman",use="complete.obs")
 })})
 
-write.csv(true_cor,"Env_Cor.csv")
-
-
-#################################
-#Compare Metrics
-#################################
-require(stringr)
-#
-require(reshape)
-setwd("C:\\Users/Jorge/Dropbox/Shared Ben and Catherine/DimDivRevision/Results/")
-#get the prevalances for each hypothesis for each species
-
-Hyp.all<-list.files(full.names=TRUE,pattern="ProportionHypotheses",recursive=TRUE)
-
-Hyp.dat<-lapply(Hyp.all,read.csv)
-
-#I'm no good at regex
-names(Hyp.dat)<-sapply(Hyp.all,function(x){
-  strsplit(x,"/")[[1]][2]
-})
-
-m.dat<-melt(Hyp.dat,variable_name="ignore")
-colnames(m.dat)[4]<-"Prevalence"
-
-#Split into component pieces
-m.dat<-data.frame(m.dat,colsplit(m.dat$Hyp,"\\.",c("Taxonomic","Phylogenetic","Trait")))
-#melt those pieces
-m.dat<-melt(m.dat,measure.vars=c("Taxonomic","Phylogenetic","Trait"),variable_name="Betadiversity")
-colnames(m.dat)[7]<-"Combination"
-
-#drop the NULL in the word labels
-m.dat$L1<-gsub("_Null","",m.dat$L1)
-
-#all possible combinations
-ggplot(m.dat,aes(fill=L1,y=Prevalence,x=Hyp)) +geom_bar(position="dodge") + theme(axis.text.x = element_text(angle = 90, hjust = 1)) + facet_wrap(~Hyp,scales="free_x") + scale_x_discrete(labels="") + labs(fill="Metrics") + theme_bw()
-ggsave("Metric_compare.jpeg",height=8,width=12)
-
-#Without random combinations
-m.datNoRandom<-m.dat[!m.dat$Hyp %in% levels(m.dat$Hyp)[str_detect(levels(m.dat$Hyp),"Random")],]
-
-ggplot(m.datNoRandom,aes(fill=L1,y=Prevalence,x=Hyp)) +geom_bar(position="dodge") + theme(axis.text.x = element_text(angle = 90, hjust = 1)) + facet_wrap(~Hyp,scales="free_x") + scale_x_discrete(labels="") + labs(fill="Metrics") + theme_bw()
-ggsave("Metric_compareNorandom.jpeg",height=8,width=11)
-
-#plot dimensions of betadiversity
-dim_beta<-aggregate(m.dat$Prevalence,list(m.dat$Combination,m.dat$Betadiversity,m.dat$L1),sum)
-colnames(dim_beta)<-c("Combination","Betadiversity","Metrics","Prevalence")
-ggplot(dim_beta,aes(fill=Metrics,y=Prevalence,x=Combination)) + geom_bar(position="dodge")+ facet_wrap(~Betadiversity
-) + theme_bw() + labs(fill="Metrics")
-ggsave("MetricComponents.jpeg",height=8,width=11)
-
-#Another way to look at components
-#Taxonomic
-TaxC<-melt(data.df,id.var=c("To","From"),measure.vars=c("Sorenson_Null","PCDc.phylo_Null"))
-p<-ggplot(TaxC,aes(x=value,fill=variable)) + geom_bar(col="black",position="dodge",aes(y=(..count..)/23871)) + labs(fill="Metric") + scale_y_continuous(label = percent) + theme_bw() + scale_fill_brewer(palette="Greys")
-p + scale_color_continuous(guide='none') + ylab("Prevalence") + xlab("")
-ggsave("Taxmetrics.svg",dpi=300,height=8,width=11)
-
-PhyloC<-melt(data.df,id.var=c("To","From"),measure.vars=c("PCDp.phylo_Null","Phylosor.Phylo_Null"))
-p<-ggplot(na.omit(PhyloC),aes(x=value,fill=variable)) + geom_bar(col="black",position="dodge",aes(y=(..count..)/23871)) + labs(fill="Metric") + scale_y_continuous(label = percent) + theme_bw() + scale_fill_brewer(palette="Greys")
-p + scale_color_continuous(guide='none') + ylab("Prevalence") + xlab("")
-ggsave("Phylometrics.svg",dpi=300,height=8,width=11)
-
-TraitC<-melt(data.df,id.var=c("To","From"),measure.vars=c("PCDp.func_Null","Phylosor.Func_Null","beta_functional_Null",'MNTD_Null'))
-p<-ggplot(na.omit(TraitC),aes(x=value,fill=variable)) + geom_bar(col="black",position="dodge",aes(y=(..count..)/23871)) + labs(fill="Metric") + scale_y_continuous(label = percent) + theme_bw() + scale_fill_brewer(palette="Greys")
-p + scale_color_continuous(guide='none') + ylab("Prevalence") + xlab("")
-ggsave("Traitmetrics.svg",dpi=300,height=8,width=11)
-
-save.image("C:/Users/Jorge/Dropbox/Shared Ben and Catherine/DimDivRevision/Results/DimDivRevision.RData")
-
-#prevalence of any combination
-round(ftable(data.df$Sorenson_Null,data.df$Phylosor.Phylo_Null,data.df$beta_functional_Null)/23871,digits=3)*100
-
-#detach our overnight sink
-sink()
+write.csv(metric_cor,"Metric_Cor.csv")
