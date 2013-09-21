@@ -27,13 +27,13 @@ require(scales)
 ###########################
 
 #sink output for overnight runs so we can see it tomorrow
-sink("C:/Users/Jorge/Dropbox/Shared Ben and Catherine/DimDivRevision/Results/OvernightOutput.txt")
+#sink("C:/Users/Ben/Dropbox/Shared Ben and Catherine/DimDivRevision/Results/OvernightOutput.txt")
 #load data if desired
-load("C:/Users/Jorge/Dropbox/Shared Ben and Catherine/DimDivRevision/Results/DimDivRevision.rData.RData")
+load("C:/Users/Ben/Dropbox/Shared Ben and Catherine/DimDivRevision/Results/DimDivRevision.RData")
 
 ###Define Source Functions
 
-source("C:/Users/Jorge/Dropbox/Scripts/DimDiv/Scripts/geb12021-sup-0004-si.R.txt")
+source("C:/Users/Ben/Dropbox/Scripts/DimDiv/Scripts/geb12021-sup-0004-si.R.txt")
 #Function is called beta tf
 
 
@@ -53,10 +53,10 @@ Getsplist<-function(commID){
 ##########################################################
 
 #Load in the data
-#load("C:/Users/Jorge/Dropbox/Shared Ben and Catherine/DimDivEntire/Output Data/Workspace.RData")
+#load("C:/Users/Ben/Dropbox/Shared Ben and Catherine/DimDivEntire/Output Data/Workspace.RData")
 
 ##set correct working directory to the dropbox Files for Analysis folder, whereever it is
-setwd("C:\\Users\\Jorge\\Dropbox\\Shared Ben and Catherine\\DimDivEntire\\Files for Analysis")  ###Change this to the Files for Analysis folder in your dropbox, no need to move it. 
+setwd("C:\\Users\\Ben\\Dropbox\\Shared Ben and Catherine\\DimDivEntire\\Files for Analysis")  ###Change this to the Files for Analysis folder in your dropbox, no need to move it. 
 
 #Read in species matrix
 siteXspp <- read.csv("siteXspp_Oct20_2011.csv", row.names=1)
@@ -84,7 +84,7 @@ tree.func<-read.tree("func.tre")
 #plot.phylo(tree.func, cex=.8, tip.color=as.numeric(as.factor(col.clade)))
 
 #bring in traits
-morph <- read.csv("C:\\Users\\Jorge\\Dropbox\\Lab paper 1 Predicted vs observed assemblages\\MorphologyShort.csv",na.strings="9999")
+morph <- read.csv("C:\\Users\\Ben\\Dropbox\\Lab paper 1 Predicted vs observed assemblages\\MorphologyShort.csv",na.strings="9999")
 
 #just get males
 morph.male<-morph[morph$Sex=="Macho",c("SpID","ExpC","Peso","AlCdo")]
@@ -106,7 +106,7 @@ rownames(mon)<-gsub(" ","_",rownames(mon))
 ##############################################################
 #Step 2 Bring in Env Info and Dissimilarity 
 ##############################################################
-comm<-siteXspp[1:100,]
+comm<-siteXspp
 
 
 #Extract env information from each locality
@@ -211,7 +211,7 @@ rownames(CostPathMatrix)<-loc$ID_Comm
 colnames(CostPathMatrix)<-loc$ID_Comm
 
 #Write to file
-setwd("C:/Users/Jorge/Dropbox/Shared Ben and Catherine/DimDivEntire/Output Data")
+setwd("C:/Users/Ben/Dropbox/Shared Ben and Catherine/DimDivEntire/Output Data")
 write.csv(CostPathMatrix,"CostPathCost.csv")
 
 ##############################If you did skip making the costpath, start here again. 
@@ -249,7 +249,7 @@ stopCluster(cl)
 m.test<-melt(Euclid_DeltaElev)
 
 #easier to write this to file?
-write.csv(m.test,"C:\\Users\\Jorge\\Dropbox\\Shared Ben and Catherine\\DimDivEntire\\Output Data\\Euclid_Delta_Elevmelt.csv")
+write.csv(m.test,"C:\\Users\\Ben\\Dropbox\\Shared Ben and Catherine\\DimDivEntire\\Output Data\\Euclid_Delta_Elevmelt.csv")
 Euclid_Elev_matrix<-cast(m.test,L1~L2)[,-1]
 
 #Set rownmaes and column names in the CORRECT ORDER.
@@ -257,7 +257,7 @@ rownames(Euclid_Elev_matrix)<-loc$ID_Comm
 colnames(Euclid_Elev_matrix)<-loc$ID_Comm
 
 #Or just read it in from file
-#Euclid_Elev_matrix.tocast<-read.csv("C:\\Users\\Jorge\\Dropbox\\Shared Ben and Catherine\\DimDivEntire\\Output Data\\Euclid_Delta_Elevmelt.csv")
+#Euclid_Elev_matrix.tocast<-read.csv("C:\\Users\\Ben\\Dropbox\\Shared Ben and Catherine\\DimDivEntire\\Output Data\\Euclid_Delta_Elevmelt.csv")
 #Euclid_Elev_matrix<-as.matrix(cast(Euclid_Elev_matrix.tocast,L1~L2)[,-1])
 #rownames(Euclid_Elev_matrix)<-loc$ID_Comm
 #colnames(Euclid_Elev_matrix)<-loc$ID_Comm
@@ -267,7 +267,7 @@ Evar<-lappend(Evar,as.matrix(Euclid_Elev_matrix))
 names(Evar)[9]<-"DeltaElevEuclid"
 
 #Write Environmental Layers Matrices to File
-setwd("C:\\Users\\Jorge\\Dropbox\\Shared Ben and Catherine\\DimDivEntire\\Output Data")
+setwd("C:\\Users\\Ben\\Dropbox\\Shared Ben and Catherine\\DimDivEntire\\Output Data")
 for(x in 1:length(Evar))
   write.csv(as.matrix(Evar[[x]]),file=paste(names(Evar[x]),".csv",""))
 
@@ -283,7 +283,7 @@ compare.env<-cast(test.Evar,X1+X2~L1)
 colnames(compare.env)<-c("To","From",names(compare.env[-c(1,2)]))
 
 #save to file
-save.image("C:/Users/Jorge/Dropbox/Shared Ben and Catherine/DimDivRevision/Results/DimDivRevision.RData")
+save.image("C:/Users/Ben/Dropbox/Shared Ben and Catherine/DimDivRevision/Results/DimDivRevision.RData")
 
 ######################################################
 #Create a function for computing betadiversity metrics
@@ -357,7 +357,7 @@ beta_all<-function(comm,tree,traits){
     
   #loop through all pairs of assemblages and get the functional overlap
   pairwise.beta<-foreach(x=pair.w,.packages=c("vegan","reshape"),.errorhandling="pass") %do%{
-    source("C:/Users/Jorge/Dropbox/Scripts/DimDiv/Scripts/geb12021-sup-0004-si.R.txt")
+    source("C:/Users/Ben/Dropbox/Scripts/DimDiv/Scripts/geb12021-sup-0004-si.R.txt")
     Villeger<-beta_TF(siteXspp_traits[rownames(siteXspp_traits) %in% x,] ,as.matrix(mon_cut))$beta
     Villeger<-melt(Villeger)
     cast(Villeger,~X1+X2)
@@ -400,7 +400,7 @@ beta_metrics<-beta_metrics[,colnames(beta_metrics) %in% c("To","From","beta_func
 #####################################################
 data.merge<-merge(compare.env,beta_metrics,by=c("To","From"))
 
-save.image("C:/Users/Jorge/Dropbox/Shared Ben and Catherine/DimDivRevision/Results/DimDivRevision.RData")
+save.image("C:/Users/Ben/Dropbox/Shared Ben and Catherine/DimDivRevision/Results/DimDivRevision.RData")
 
 #################################################################################
 #The Null model on 219*219 assemblages is 23871 comparisons, this is too extreme to do in a reasonable time
@@ -540,7 +540,7 @@ write.csv(data.df.null,"FinalDataNull.csv")
 
 
 #Or save data
-save.image("C:/Users/Jorge/Dropbox/Shared Ben and Catherine/DimDivRevision/Results/DimDivRevision.RData")
+save.image("C:/Users/Ben/Dropbox/Shared Ben and Catherine/DimDivRevision/Results/DimDivRevision.RData")
 
 #Data Generation Complete
 ##########################################################################################
@@ -550,7 +550,7 @@ save.image("C:/Users/Jorge/Dropbox/Shared Ben and Catherine/DimDivRevision/Resul
 #Tables and Statistics
 #########################################################################################
 
-setwd("C:\\Users\\Jorge\\Dropbox\\Shared Ben and Catherine\\DimDivRevision\\Results")
+setwd("C:\\Users\\Ben\\Dropbox\\Shared Ben and Catherine\\DimDivRevision\\Results")
 
 #Get the bounds of each 
 range_metrics<-list()
@@ -621,10 +621,10 @@ range_plots<-lapply(12:14,function(x){
 #Create a function that takes the input of which null metrics you want to use to create output lists
 #Create multiple options for the hyplist, hold them in a list and spit them to file seperately
 
-setwd("C:\\Users\\Jorge\\Dropbox\\Shared Ben and Catherine\\DimDivRevision\\Results")
+setwd("C:\\Users\\Ben\\Dropbox\\Shared Ben and Catherine\\DimDivRevision\\Results")
 
 Hyplist.func<-function(Tax,Phylo,Func){
-  setwd("C:\\Users\\Jorge\\Dropbox\\Shared Ben and Catherine\\DimDivRevision\\Results")
+  setwd("C:\\Users\\Ben\\Dropbox\\Shared Ben and Catherine\\DimDivRevision\\Results")
   #Create directory
   dir.store<-dir.create(paste(Tax,Phylo,Func,sep="_"))
   setwd(paste(Tax,Phylo,Func,sep="_"))
@@ -737,7 +737,7 @@ Hyplist.func<-function(Tax,Phylo,Func){
   remove.level<-levels(as.factor(HypBox$L1))[str_detect(levels(as.factor(HypBox$L1)),"Random")]
   HypBox<-HypBox[!HypBox$L1 %in% remove.level,]
   
-  setwd("C:\\Users\\Jorge\\Dropbox\\Shared Ben and Catherine\\DimDivRevision\\Results")
+  setwd("C:\\Users\\Ben\\Dropbox\\Shared Ben and Catherine\\DimDivRevision\\Results")
   setwd(paste(Tax,Phylo,Func,sep="_"))
   dir.create("3WayBoxplots")
   setwd("3WayBoxplots")
@@ -767,12 +767,12 @@ Hyplist.func<-function(Tax,Phylo,Func){
   ggsave("Env3Boxplots.jpeg",dpi=300,height=8,width=12)
   
   #Draw Lines between all hypothesis one sites
-  elevr<-raster("C:\\Users\\Jorge\\Dropbox\\Shared Ben and Catherine\\DimDivEntire\\Files for Analysis\\studyarea_1km.tif")
+  elevr<-raster("C:\\Users\\Ben\\Dropbox\\Shared Ben and Catherine\\DimDivEntire\\Files for Analysis\\studyarea_1km.tif")
   
   #Function for spatial lines for all hypothesis, overlayed on an Ecuador Map
   
   #ugly function to get to the directory level, sorry. 
-  setwd("C:\\Users\\Jorge\\Dropbox\\Shared Ben and Catherine\\DimDivRevision\\Results")
+  setwd("C:\\Users\\Ben\\Dropbox\\Shared Ben and Catherine\\DimDivRevision\\Results")
   setwd(paste(Tax,Phylo,Func,sep="_"))
   dir.create("Maps")
   setwd("Maps")
@@ -836,7 +836,7 @@ Hyplist.func<-function(Tax,Phylo,Func){
   
   ###Done
   #save data from that run
-  setwd("C:\\Users\\Jorge\\Dropbox\\Shared Ben and Catherine\\DimDivRevision\\Results")
+  setwd("C:\\Users\\Ben\\Dropbox\\Shared Ben and Catherine\\DimDivRevision\\Results")
   setwd(paste(Tax,Phylo,Func,sep="_"))
   
   save.image("plotting.Rdata")
