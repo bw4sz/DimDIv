@@ -100,7 +100,7 @@ rownames(mon)<-gsub(" ","_",rownames(mon))
 ##################################
 #Define Function to Compare Metrics
 ###################################
-comm<-siteXspp[sample(1:nrow(siteXspp),20),]
+comm<-siteXspp
 
 
 beta_all<-function(comm,tree,traits,cores){
@@ -212,7 +212,7 @@ Allmetrics<-merge(func.beta,Phylo_Tax,by=c("To","From"))
 
 prc_traits<-prcomp(mon_cut)
 newSGdist <- dist(prc_traits$x)
-source("C:/Users/Ben/Documents/DimDiv/BenHolttraitDiversity.R")
+source("C:/Users/Ben/Documents/DimDiv/DimDiv/BenHolttraitDiversity.R")
 
 #create sp.list
 sp.list<-apply(siteXspp_traits,1,function(x){
@@ -366,7 +366,6 @@ p<-p+ theme_bw() + scale_color_gradient("Sorenson",low="gray90",high="black")
 p<-p+ ylab("Trait Convex Hull") + xlab("Phylogenetic PCDp") + coord_equal()
 p
 ggsave("PhylosorPhylovConvexHull_Elevation.svg",height=7,width=7.5,dpi=300)
-
 
 #Phylo phylosor and Hulls
 p<-ggplot(data.df,aes(y=Phylosor.Phylo,x=PCDc.phylo,col=Elev)) + geom_point() 

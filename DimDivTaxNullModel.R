@@ -299,7 +299,7 @@ colnames(sorenson)<-c("To","From","Sorenson")
 ######################################
 
 #Null model off taxonomic diversity with respect to richness
-tax_nullM<-rbind.fill(lapply(1:100,function(x){
+tax_nullM<-rbind.fill(lapply(1:1000,function(x){
 null_comm<-commsimulator(comm,method="r1")
 d<-as.matrix(vegdist(null_comm,binary=TRUE,upper=FALSE,diag=FALSE))
 sorenson<-data.frame(melt(d)[melt(upper.tri(d))$value,],Iteration=x)
@@ -426,7 +426,7 @@ sp.list<-apply(siteXspp,1,function(x){
 cl<-makeCluster(4,"SOCK")
 registerDoSNOW(cl)
 
-Null_dataframe<-foreach(j=1:10,.combine=rbind,.packages=c("foreach","reshape","picante")) %dopar% {
+Null_dataframe<-foreach(j=1:1000,.combine=rbind,.packages=c("foreach","reshape","picante")) %dopar% {
   
 nullPT<-lapply(1:nrow(taxHL),function(x){
   #Richness of the two assemblages
@@ -473,7 +473,6 @@ nullPT<-lapply(1:nrow(taxHL),function(x){
 nullPT<-rbind.fill(nullPT)
 return(data.frame(nullPT,Iteration=j))
 }
-
 stopCluster(cl)
 
 #Keep desired columns, ignoring nestedness components
@@ -484,7 +483,6 @@ Null_dataframe<-Null_dataframe[,colnames(Null_dataframe) %in% c("To","From","bet
 ######################################################################
 
 #Which rows of observed data are in the null model data
-data.cNull<-data.merge[,]
 
 index_datamerge<-paste(data.merge$To,data.merge$From,sep=".")
 index_taxHL<-paste(taxHL$To,taxHL$From,sep=".")
@@ -531,13 +529,12 @@ colnames(null_PhyloTrait)<-c("To","From",paste(colnames(Null_dataframe)[!colname
 data.df.null<-merge(data.merge,null_PhyloTrait,by=c("To","From"))
 data.df.null<-merge(data.df.null,null_taxdf,by=c("To","From"))
 
-#Legacy correction, data.merge is data.df, sorry
+#Legacy edition, from here on out data.merge is data.df
 data.df<-data.merge
 
 #Write to file
 write.csv(data.df,"FinalData.csv")
 write.csv(data.df.null,"FinalDataNull.csv")
-
 
 #Or save data
 save.image("C:/Users/Ben/Dropbox/Shared Ben and Catherine/DimDivRevision/Results/DimDivRevision.RData")
@@ -580,7 +577,6 @@ rownames(data_prev)<-data_prev[,1]
 data_prev<-data_prev[,-1]
 
 write.csv(round(data_prev,3)*100,"NullPrevalence.csv")
-
 
 ##################################################################
 #######################ScatterPlots###############################
