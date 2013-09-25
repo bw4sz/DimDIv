@@ -27,13 +27,13 @@ require(scales)
 ###########################
 
 #sink output for overnight runs so we can see it tomorrow
-#sink("C:/Users/Ben/Dropbox/Shared Ben and Catherine/DimDivRevision/Results/OvernightOutput.txt")
+#sink("C:/Users/Jorge/Dropbox/Shared Ben and Catherine/DimDivRevision/Results/OvernightOutput.txt")
 #load data if desired
-load("C:/Users/Ben/Dropbox/Shared Ben and Catherine/DimDivRevision/Results/DimDivRevision.RData")
+load("C:/Users/Jorge/Dropbox/Shared Ben and Catherine/DimDivRevision/Results/DimDivRevision.RData")
 
 ###Define Source Functions
 
-source("C:/Users/Ben/Dropbox/Scripts/DimDiv/Scripts/geb12021-sup-0004-si.R.txt")
+source("C:/Users/Jorge/Dropbox/Scripts/DimDiv/Scripts/geb12021-sup-0004-si.R.txt")
 #Function is called beta tf
 
 
@@ -53,10 +53,10 @@ Getsplist<-function(commID){
 ##########################################################
 
 #Load in the data
-#load("C:/Users/Ben/Dropbox/Shared Ben and Catherine/DimDivEntire/Output Data/Workspace.RData")
+#load("C:/Users/Jorge/Dropbox/Shared Ben and Catherine/DimDivEntire/Output Data/Workspace.RData")
 
 ##set correct working directory to the dropbox Files for Analysis folder, whereever it is
-setwd("C:\\Users\\Ben\\Dropbox\\Shared Ben and Catherine\\DimDivEntire\\Files for Analysis")  ###Change this to the Files for Analysis folder in your dropbox, no need to move it. 
+setwd("C:\\Users\\Jorge\\Dropbox\\Shared Ben and Catherine\\DimDivEntire\\Files for Analysis")  ###Change this to the Files for Analysis folder in your dropbox, no need to move it. 
 
 #Read in species matrix
 siteXspp <- read.csv("siteXspp_Oct20_2011.csv", row.names=1)
@@ -84,7 +84,7 @@ tree.func<-read.tree("func.tre")
 #plot.phylo(tree.func, cex=.8, tip.color=as.numeric(as.factor(col.clade)))
 
 #bring in traits
-morph <- read.csv("C:\\Users\\Ben\\Dropbox\\Lab paper 1 Predicted vs observed assemblages\\MorphologyShort.csv",na.strings="9999")
+morph <- read.csv("C:\\Users\\Jorge\\Dropbox\\Lab paper 1 Predicted vs observed assemblages\\MorphologyShort.csv",na.strings="9999")
 
 #just get males
 morph.male<-morph[morph$Sex=="Macho",c("SpID","ExpC","Peso","AlCdo")]
@@ -211,7 +211,7 @@ rownames(CostPathMatrix)<-loc$ID_Comm
 colnames(CostPathMatrix)<-loc$ID_Comm
 
 #Write to file
-setwd("C:/Users/Ben/Dropbox/Shared Ben and Catherine/DimDivEntire/Output Data")
+setwd("C:/Users/Jorge/Dropbox/Shared Ben and Catherine/DimDivRevision/Results/")
 write.csv(CostPathMatrix,"CostPathCost.csv")
 
 ##############################If you did skip making the costpath, start here again. 
@@ -249,7 +249,7 @@ stopCluster(cl)
 m.test<-melt(Euclid_DeltaElev)
 
 #easier to write this to file?
-write.csv(m.test,"C:\\Users\\Ben\\Dropbox\\Shared Ben and Catherine\\DimDivEntire\\Output Data\\Euclid_Delta_Elevmelt.csv")
+write.csv(m.test,"C:\\Users\\Jorge\\Dropbox\\Shared Ben and Catherine\\DimDivEntire\\Output Data\\Euclid_Delta_Elevmelt.csv")
 Euclid_Elev_matrix<-cast(m.test,L1~L2)[,-1]
 
 #Set rownmaes and column names in the CORRECT ORDER.
@@ -257,7 +257,7 @@ rownames(Euclid_Elev_matrix)<-loc$ID_Comm
 colnames(Euclid_Elev_matrix)<-loc$ID_Comm
 
 #Or just read it in from file
-#Euclid_Elev_matrix.tocast<-read.csv("C:\\Users\\Ben\\Dropbox\\Shared Ben and Catherine\\DimDivEntire\\Output Data\\Euclid_Delta_Elevmelt.csv")
+#Euclid_Elev_matrix.tocast<-read.csv("C:\\Users\\Jorge\\Dropbox\\Shared Ben and Catherine\\DimDivEntire\\Output Data\\Euclid_Delta_Elevmelt.csv")
 #Euclid_Elev_matrix<-as.matrix(cast(Euclid_Elev_matrix.tocast,L1~L2)[,-1])
 #rownames(Euclid_Elev_matrix)<-loc$ID_Comm
 #colnames(Euclid_Elev_matrix)<-loc$ID_Comm
@@ -267,7 +267,7 @@ Evar<-lappend(Evar,as.matrix(Euclid_Elev_matrix))
 names(Evar)[9]<-"DeltaElevEuclid"
 
 #Write Environmental Layers Matrices to File
-setwd("C:\\Users\\Ben\\Dropbox\\Shared Ben and Catherine\\DimDivEntire\\Output Data")
+setwd("C:/Users/Jorge/Dropbox/Shared Ben and Catherine/DimDivRevision/Results/")
 for(x in 1:length(Evar))
   write.csv(as.matrix(Evar[[x]]),file=paste(names(Evar[x]),".csv",""))
 
@@ -283,7 +283,7 @@ compare.env<-cast(test.Evar,X1+X2~L1)
 colnames(compare.env)<-c("To","From",names(compare.env[-c(1,2)]))
 
 #save to file
-save.image("C:/Users/Ben/Dropbox/Shared Ben and Catherine/DimDivRevision/Results/DimDivRevision.RData")
+save.image("C:/Users/Jorge/Dropbox/Shared Ben and Catherine/DimDivRevision/Results/DimDivRevision.RData")
 
 ######################################################
 #Create a function for computing betadiversity metrics
@@ -308,7 +308,7 @@ return(sorenson)}))
 
 #For each pair of assemblage compare the observed metrics to the null distribution. 
 
-cl<-makeCluster(4,"SOCK")
+cl<-makeCluster(8,"SOCK")
 registerDoSNOW(cl)
 system.time(null_taxlists<-foreach(x=1:nrow(sorenson),.combine=rbind) %dopar% {
  
@@ -352,38 +352,46 @@ beta_all<-function(comm,tree,traits){
   #There are eight species without traits, take them out for just this portion of the analysis, keep the assemblage lsit
   siteXspp_traits<-comm[,colnames(comm) %in% rownames(mon_cut)]
   
-  #get all pairwise combinations of sites, depending if you want a full matrix (null) or sparse matrix (observed values)
-  pair.w<-combn(rownames(siteXspp_traits),2,simplify=FALSE)
+  
+  prc_traits<-prcomp(mon_cut)
+  newSGdist <- dist(prc_traits$x)
+  source("C:/Users/Jorge/Documents/DimDiv/BenHolttraitDiversity.R")
+  
+  #create sp.list
+  sp.list<-lapply(rownames(siteXspp_traits),function(k){
+    x<-siteXspp_traits[k,]
+    names(x[which(x==1)])
+  })
+  
+  names(sp.list)<-rownames(siteXspp_traits)
+  
+  dists <- as.matrix(newSGdist)
+  
+  rownames(dists) <- rownames(mon_cut)
+  colnames(dists) <- rownames(mon_cut)
+  
+  sgtraitMNTD <- sapply(rownames(siteXspp_traits),function(i){
     
-  #loop through all pairs of assemblages and get the functional overlap
-  pairwise.beta<-foreach(x=pair.w,.packages=c("vegan","reshape"),.errorhandling="pass") %do%{
-    source("C:/Users/Ben/Dropbox/Scripts/DimDiv/Scripts/geb12021-sup-0004-si.R.txt")
-    Villeger<-beta_TF(siteXspp_traits[rownames(siteXspp_traits) %in% x,] ,as.matrix(mon_cut))$beta
-    Villeger<-melt(Villeger)
-    cast(Villeger,~X1+X2)
-  }
+    #Iterator count
+    #print(round(which(rownames(siteXspp_traits)==i)/nrow(siteXspp_traits),3))
+    
+    #set iterator
+    A<-i
+    
+    #
+    out<-lapply(rownames(siteXspp_traits)[1:(which(rownames(siteXspp_traits) == i))], function(B) {MNND(A,B,sp.list=sp.list,dists=dists)})
+    names(out)<-rownames(siteXspp_traits)[1:(which(rownames(siteXspp_traits) == i))]
+    return(out)
+  })
   
-  #get rid of the NA rows
-  toremove<-sapply(pairwise.beta,function(x) is.character(x[[1]]))
-  pairwise.beta.removed<-rbind.fill(pairwise.beta[!toremove])
+  names(sgtraitMNTD) <- rownames(siteXspp_traits)
+  melt.MNTD<-melt(sgtraitMNTD)
   
-  #Get the order of inputs
-  pairwise.order<-t(sapply(pair.w,function(x) {matrix(nrow=1,ncol=2,x)}))
-  pairwise.order.removed<-pairwise.order[!toremove,]
+  colnames(melt.MNTD)<-c("MNTD","To","From")
   
-  #If there are just two rows, it needs to be turned back to a matrix
-  if(class(pairwise.order.removed)=="character"){pairwise.order.removed<-t(matrix(pairwise.order.removed))}
-  func.beta<-data.frame(pairwise.order.removed,pairwise.beta.removed)[,-3]
-  
-  #Combine the dataframes
-  colnames(func.beta)[1:2]<-c("To","From")
-  
-  #If functional is empty, 
-  if(nrow(func.beta)==0){func.beta<-data.frame(pairwise.order,beta_taxonomic=NA,nestedness_functional=NA,nestedness_taxonomic=NA,turnover_functional=NA,turnover_taxonomic=NA)
-                         colnames(func.beta)[1:2]<-c("To","From")}
-  
-  Allmetrics<-merge(func.beta,Phylosor.phylo,by=c("To","From"))
-
+  #Combine with other metrics
+  Allmetrics<-merge(Phylosor.phylo,melt.MNTD,by=c("To","From"))
+    
   return(Allmetrics)}
 
 system.time(beta_metrics<-beta_all(comm=comm,tree=tree,traits=mon))
@@ -393,14 +401,14 @@ head(beta_metrics)
 beta_metrics<-merge(beta_metrics,sorenson,c("To","From"))
 
 #Get rid of the nestedness components
-beta_metrics<-beta_metrics[,colnames(beta_metrics) %in% c("To","From","beta_functional","Phylosor.Phylo","Sorenson") ]
+beta_metrics<-beta_metrics[,colnames(beta_metrics) %in% c("To","From","MNTD","Phylosor.Phylo","Sorenson") ]
 
 #####################################################
 #Merge Betadiversity and Environmnetal Dissimilairity
 #####################################################
 data.merge<-merge(compare.env,beta_metrics,by=c("To","From"))
 
-save.image("C:/Users/Ben/Dropbox/Shared Ben and Catherine/DimDivRevision/Results/DimDivRevision.RData")
+save.image("C:/Users/Jorge/Dropbox/Shared Ben and Catherine/DimDivRevision/Results/DimDivRevision.RData")
 
 #################################################################################
 #The Null model on 219*219 assemblages is 23871 comparisons, this is too extreme to do in a reasonable time
@@ -423,10 +431,9 @@ sp.list<-apply(siteXspp,1,function(x){
 #Null model for phylogenetic and trait
 ############################
 
-cl<-makeCluster(4,"SOCK")
+cl<-makeCluster(8,"SOCK")
 registerDoSNOW(cl)
-
-Null_dataframe<-foreach(j=1:1000,.combine=rbind,.packages=c("foreach","reshape","picante")) %dopar% {
+Null_dataframe<-foreach(j=1:20,.combine=rbind,.packages=c("foreach","reshape","picante")) %dopar% {
   
 nullPT<-lapply(1:nrow(taxHL),function(x){
   #Richness of the two assemblages
@@ -476,14 +483,13 @@ return(data.frame(nullPT,Iteration=j))
 stopCluster(cl)
 
 #Keep desired columns, ignoring nestedness components
-Null_dataframe<-Null_dataframe[,colnames(Null_dataframe) %in% c("To","From","beta_functional","Phylosor.Phylo","Sorenson","Iteration") ]
+Null_dataframe<-Null_dataframe[,colnames(Null_dataframe) %in% c("To","From","MNTD","Phylosor.Phylo","Sorenson","Iteration") ]
 
 ######################################################################
 #######################Null Model Analysis, defining "High and Low"
 ######################################################################
 
 #Which rows of observed data are in the null model data
-
 index_datamerge<-paste(data.merge$To,data.merge$From,sep=".")
 index_taxHL<-paste(taxHL$To,taxHL$From,sep=".")
 
@@ -496,6 +502,7 @@ data.cNull<-data.merge[index_datamerge %in% index_taxHL,]
 #Not included since it is specific the particular supercomputing cluster used, and not transferable.
 
 #For each pair of assemblage compare the observed metrics to the null distribution. 
+system.time(
 null_lists<-list()
 for (x in 1:nrow(data.cNull)){
    
@@ -519,7 +526,7 @@ for (x in 1:nrow(data.cNull)){
   
   null_lists[[x]]<-data.frame(t(c(To=rowS$To,From=rowS$From,null_stats)))
 }
-
+)
 #Bind together the null model outputs
 rownames(null_lists)<-NULL
 null_PhyloTrait<-rbind.fill(null_lists)
@@ -527,17 +534,17 @@ colnames(null_PhyloTrait)<-c("To","From",paste(colnames(Null_dataframe)[!colname
 
 #Combine the environmental, observed and null metrics into a huge dataframe
 data.df.null<-merge(data.merge,null_PhyloTrait,by=c("To","From"))
-data.df.null<-merge(data.df.null,null_taxdf,by=c("To","From"))
+data.df.null<-merge(data.df.null,null_taxlists,by=c("To","From"))
 
 #Legacy edition, from here on out data.merge is data.df
 data.df<-data.merge
 
 #Write to file
-write.csv(data.df,"FinalData.csv")
-write.csv(data.df.null,"FinalDataNull.csv")
+write.csv(data.df,"C:\\Users\\Jorge\\Dropbox\\Shared Ben and Catherine\\DimDivRevision\\Results\\FinalData.csv")
+write.csv(data.df.null,"C:\\Users\\Jorge\\Dropbox\\Shared Ben and Catherine\\DimDivRevision\\Results\\FinalDataNull.csv")
 
 #Or save data
-save.image("C:/Users/Ben/Dropbox/Shared Ben and Catherine/DimDivRevision/Results/DimDivRevision.RData")
+save.image("C:/Users/Jorge/Dropbox/Shared Ben and Catherine/DimDivRevision/Results/DimDivRevision.RData")
 
 #Data Generation Complete
 ##########################################################################################
@@ -547,7 +554,7 @@ save.image("C:/Users/Ben/Dropbox/Shared Ben and Catherine/DimDivRevision/Results
 #Tables and Statistics
 #########################################################################################
 
-setwd("C:\\Users\\Ben\\Dropbox\\Shared Ben and Catherine\\DimDivRevision\\Results")
+setwd("C:\\Users\\Jorge\\Dropbox\\Shared Ben and Catherine\\DimDivRevision\\Results")
 
 #Get the bounds of each 
 range_metrics<-list()
@@ -584,14 +591,14 @@ write.csv(round(data_prev,3)*100,"NullPrevalence.csv")
 
 #PCDp Phylo and hulls
 #PCD func and PCD phylo
-p<-ggplot(data.df,aes(y=beta_functional,x=Phylosor.Phylo,col=Sorenson)) + geom_point() 
+p<-ggplot(data.df,aes(y=MNTD,x=Phylosor.Phylo,col=Sorenson)) + geom_point() 
 p<-p+ theme_bw() + scale_color_gradient("Sorenson",low="gray90",high="black")
 p<-p+ ylab("Trait Betadiversity") + xlab("Phylogenetic Betadiversity") + coord_equal()
 p
 ggsave("PhylosorPhylovConvexHull_Taxonomic.svg",height=7,width=7.5,dpi=300)
 
 #Phylo phylosor and Hulls
-p<-ggplot(data.df,aes(y=beta_functional,x=Phylosor.Phylo,col=Elev)) + geom_point() 
+p<-ggplot(data.df,aes(y=MNTD,x=Phylosor.Phylo,col=Elev)) + geom_point() 
 p<-p+ theme_bw() + scale_color_gradient("Elevation",low="gray90",high="black")
 p<-p+ ylab("Trait Convex Hull") + xlab("Phylogenetic Phylosor") + coord_equal()
 p
@@ -617,10 +624,10 @@ range_plots<-lapply(12:14,function(x){
 #Create a function that takes the input of which null metrics you want to use to create output lists
 #Create multiple options for the hyplist, hold them in a list and spit them to file seperately
 
-setwd("C:\\Users\\Ben\\Dropbox\\Shared Ben and Catherine\\DimDivRevision\\Results")
+setwd("C:\\Users\\Jorge\\Dropbox\\Shared Ben and Catherine\\DimDivRevision\\Results")
 
 Hyplist.func<-function(Tax,Phylo,Func){
-  setwd("C:\\Users\\Ben\\Dropbox\\Shared Ben and Catherine\\DimDivRevision\\Results")
+  setwd("C:\\Users\\Jorge\\Dropbox\\Shared Ben and Catherine\\DimDivRevision\\Results")
   #Create directory
   dir.store<-dir.create(paste(Tax,Phylo,Func,sep="_"))
   setwd(paste(Tax,Phylo,Func,sep="_"))
@@ -733,7 +740,7 @@ Hyplist.func<-function(Tax,Phylo,Func){
   remove.level<-levels(as.factor(HypBox$L1))[str_detect(levels(as.factor(HypBox$L1)),"Random")]
   HypBox<-HypBox[!HypBox$L1 %in% remove.level,]
   
-  setwd("C:\\Users\\Ben\\Dropbox\\Shared Ben and Catherine\\DimDivRevision\\Results")
+  setwd("C:\\Users\\Jorge\\Dropbox\\Shared Ben and Catherine\\DimDivRevision\\Results")
   setwd(paste(Tax,Phylo,Func,sep="_"))
   dir.create("3WayBoxplots")
   setwd("3WayBoxplots")
@@ -763,12 +770,12 @@ Hyplist.func<-function(Tax,Phylo,Func){
   ggsave("Env3Boxplots.jpeg",dpi=300,height=8,width=12)
   
   #Draw Lines between all hypothesis one sites
-  elevr<-raster("C:\\Users\\Ben\\Dropbox\\Shared Ben and Catherine\\DimDivEntire\\Files for Analysis\\studyarea_1km.tif")
+  elevr<-raster("C:\\Users\\Jorge\\Dropbox\\Shared Ben and Catherine\\DimDivEntire\\Files for Analysis\\studyarea_1km.tif")
   
   #Function for spatial lines for all hypothesis, overlayed on an Ecuador Map
   
   #ugly function to get to the directory level, sorry. 
-  setwd("C:\\Users\\Ben\\Dropbox\\Shared Ben and Catherine\\DimDivRevision\\Results")
+  setwd("C:\\Users\\Jorge\\Dropbox\\Shared Ben and Catherine\\DimDivRevision\\Results")
   setwd(paste(Tax,Phylo,Func,sep="_"))
   dir.create("Maps")
   setwd("Maps")
@@ -832,7 +839,7 @@ Hyplist.func<-function(Tax,Phylo,Func){
   
   ###Done
   #save data from that run
-  setwd("C:\\Users\\Ben\\Dropbox\\Shared Ben and Catherine\\DimDivRevision\\Results")
+  setwd("C:\\Users\\Jorge\\Dropbox\\Shared Ben and Catherine\\DimDivRevision\\Results")
   setwd(paste(Tax,Phylo,Func,sep="_"))
   
   save.image("plotting.Rdata")
@@ -840,5 +847,5 @@ Hyplist.func<-function(Tax,Phylo,Func){
 
 #Run the plotting function for all sets of hypothesis
 
-system.time(Hyplist.func(Tax="Sorenson_Null",Phylo="Phylosor.Phylo_Null",Func="beta_functional_Null"))
+system.time(Hyplist.func(Tax="Sorenson_Null",Phylo="Phylosor.Phylo_Null",Func="MNTD_Null"))
 

@@ -270,7 +270,7 @@ save.image("C:/Users/Ben/Dropbox/Shared Ben and Catherine/DimDivRevision/Results
 #########################################################################################
 data.df<-beta_metrics
 
-setwd("C:\\Users\\Ben\\Dropbox\\Shared Ben and Catherine\\DimDivRevision\\Results")
+setwd("C:\\Users\\Jorge\\Dropbox\\Shared Ben and Catherine\\DimDivRevision\\Results")
 
 dir.create("CompareMetrics")
 setwd("CompareMetrics")
@@ -391,3 +391,25 @@ metric_cor<-sapply(colnames(data.d), function(x){ sapply(colnames(data.d),functi
 })})
 
 write.csv(metric_cor,"Metric_Cor.csv")
+
+###########Compare metrics of trait 
+#Dendrogram
+dendogram.trait<-cophenetic(tree.func)
+prc_traits<-prcomp(mon)
+
+#PCA dist
+newSGdist <- as.matrix(dist(prc_traits$x))
+
+#Euclid Dist
+euclid.trait<-as.matrix(dist(mon))
+
+#Combine
+m.trait<-melt(list(dendrogram=dendogram.trait,MNTD=newSGdist,Euclid=euclid.trait))
+colnames(m.trait)<-c("To","From","dist","Metric")
+
+trait.compare<-dcast(m.trait,...~Metric,value.var="dist")
+
+svg("Trait.comparison",height=9,width=8)
+ggpairs(trait.compare[complete.cases(trait.compare),-c(1,2)])
+dev.off()
+
