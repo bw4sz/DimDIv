@@ -17,30 +17,43 @@ require(GGally)
 require(stringr)
 require(scales)
 library(multicore)
-library(doMC)
 library(foreach)
+require(raster)
+require(boot)
+library(Rmpi)
+
+cluster <- getMPIcluster()
+ 
+# Print the hostname for each cluster member
+ sayhello <- function()
+ {
+ 	info <- Sys.info()[c("nodename", "machine")]
+ 	paste("Hello from", info[1], "with CPU type", info[2])
+ }
+ 
+names <- clusterCall(cluster, sayhello)
+print(unlist(names))
 
 
-registerDoMC()
-options(cores=16)
+registerDoSNOW(cluster)
 ###########################
 ###############Read in data
 ###########################
 
 ###Define Source Functions
+Sys.setlocale('LC_ALL','C') 
 
-source("/home1/02443/bw4sz/geb12021-sup-0004-si.R.txt")
-#Function is called beta tf
 
 ##########################################################
 #Read in data
 ##########################################################
 
 #Load in the data
-load("/home1/02443/bw4sz/DimDivRevision.RData")
+load("/home1/02443/bw4sz/DimDiv/DimDivRevision.RData")
 
-comm<-siteXspp[1:10,]
+comm<-siteXspp[,]
 
+dim(comm)
 ######################################################
 #Create a function for computing betadiversity metrics
 #######################################################
@@ -55,7 +68,7 @@ colnames(sorenson)<-c("To","From","Sorenson")
 ######################################
 
 #Null model off taxonomic diversity with respect to richness
-tax_nullM<-rbind.fill(lapply(1:1000,function(x){
+tax_nullM<-rbind.fill(lapply(1:500,function(x){
 null_comm<-commsimulator(comm,method="r1")
 d<-as.matrix(vegdist(null_comm,binary=TRUE,upper=FALSE,diag=FALSE))
 sorenson<-data.frame(melt(d)[melt(upper.tri(d))$value,],Iteration=x)
@@ -64,8 +77,7 @@ return(sorenson)}))
 
 #For each pair of assemblage compare the observed metrics to the null distribution. 
 
-registerDoMC(cl)
-null_taxlists<-foreach(x=1:nrow(sorenson),.combine=rbind) %dopar% {
+system.time(null_taxlists<-foreach(x=1:nrow(sorenson),.combine=rbind) %dopar% {
  
   #Select Row
   rowS<-sorenson[x,]
@@ -81,7 +93,7 @@ null_taxlists<-foreach(x=1:nrow(sorenson),.combine=rbind) %dopar% {
     if( test_stat <= .95 & test_stat >= .05 ) answer<-"Random"
   
 return(data.frame(t(c(To=rowS$To,From=rowS$From,Sorenson_Null=answer))))
-  }
+  })
 
 #####################################################
 #Perform Phylogenetic and Trait Betadiversity
@@ -89,6 +101,13 @@ return(data.frame(t(c(To=rowS$To,From=rowS$From,Sorenson_Null=answer))))
 
 beta_all<-function(comm,tree,traits){
   
+#####################################
+##Taxonomic Betadiversity
+d<-as.matrix(vegdist(comm,binary=TRUE,upper=FALSE,diag=FALSE))
+sorenson<-melt(d)[melt(upper.tri(d))$value,]
+colnames(sorenson)<-c("To","From","Sorenson")
+######################################
+
   #Phylosor Calculation see Bryant 2008
   phylo.matrix<-as.matrix(phylosor(comm,tree))
   diag(phylo.matrix)<-NA
@@ -106,37 +125,46 @@ beta_all<-function(comm,tree,traits){
   #There are eight species without traits, take them out for just this portion of the analysis, keep the assemblage lsit
   siteXspp_traits<-comm[,colnames(comm) %in% rownames(mon_cut)]
   
-  #get all pairwise combinations of sites, depending if you want a full matrix (null) or sparse matrix (observed values)
-  pair.w<-combn(rownames(siteXspp_traits),2,simplify=FALSE)
+  
+  prc_traits<-prcomp(mon_cut)
+  newSGdist <- dist(prc_traits$x)
+  source("/home1/02443/bw4sz/DimDiv/BenHolttraitDiversity.R")
+  
+  #create sp.list
+  sp.list<-lapply(rownames(siteXspp_traits),function(k){
+    x<-siteXspp_traits[k,]
+    names(x[which(x==1)])
+  })
+  
+  names(sp.list)<-rownames(siteXspp_traits)
+  
+  dists <- as.matrix(newSGdist)
+  
+  rownames(dists) <- rownames(mon_cut)
+  colnames(dists) <- rownames(mon_cut)
+  
+  sgtraitMNTD <- sapply(rownames(siteXspp_traits),function(i){
     
-  #loop through all pairs of assemblages and get the functional overlap
-  pairwise.beta<-foreach(x=pair.w,.packages=c("vegan","reshape"),.errorhandling="pass") %do%{
-    source("C:/Users/Ben/Dropbox/Scripts/DimDiv/Scripts/geb12021-sup-0004-si.R.txt")
-    Villeger<-beta_TF(siteXspp_traits[rownames(siteXspp_traits) %in% x,] ,as.matrix(mon_cut))$beta
-    Villeger<-melt(Villeger)
-    cast(Villeger,~X1+X2)
-  }
+    #Iterator count
+    #print(round(which(rownames(siteXspp_traits)==i)/nrow(siteXspp_traits),3))
+    
+    #set iterator
+    A<-i
+    
+    #
+    out<-lapply(rownames(siteXspp_traits)[1:(which(rownames(siteXspp_traits) == i))], function(B) {MNND(A,B,sp.list=sp.list,dists=dists)})
+    names(out)<-rownames(siteXspp_traits)[1:(which(rownames(siteXspp_traits) == i))]
+    return(out)
+  })
   
-  #get rid of the NA rows
-  toremove<-sapply(pairwise.beta,function(x) is.character(x[[1]]))
-  pairwise.beta.removed<-rbind.fill(pairwise.beta[!toremove])
+  names(sgtraitMNTD) <- rownames(siteXspp_traits)
+  melt.MNTD<-melt(sgtraitMNTD)
   
-  #Get the order of inputs
-  pairwise.order<-t(sapply(pair.w,function(x) {matrix(nrow=1,ncol=2,x)}))
-  pairwise.order.removed<-pairwise.order[!toremove,]
+  colnames(melt.MNTD)<-c("MNTD","To","From")
   
-  #If there are just two rows, it needs to be turned back to a matrix
-  if(class(pairwise.order.removed)=="character"){pairwise.order.removed<-t(matrix(pairwise.order.removed))}
-  func.beta<-data.frame(pairwise.order.removed,pairwise.beta.removed)[,-3]
-  
-  #Combine the dataframes
-  colnames(func.beta)[1:2]<-c("To","From")
-  
-  #If functional is empty, 
-  if(nrow(func.beta)==0){func.beta<-data.frame(pairwise.order,beta_taxonomic=NA,nestedness_functional=NA,nestedness_taxonomic=NA,turnover_functional=NA,turnover_taxonomic=NA)
-                         colnames(func.beta)[1:2]<-c("To","From")}
-  
-  Allmetrics<-merge(func.beta,Phylosor.phylo,by=c("To","From"))
+  #Combine with other metrics
+  Allmetrics0<-merge(Phylosor.phylo,melt.MNTD,by=c("To","From"))
+  Allmetrics<-merge(Allmetrics0,sorenson,by=c("To","From"))
 
   return(Allmetrics)}
 
@@ -144,17 +172,16 @@ system.time(beta_metrics<-beta_all(comm=comm,tree=tree,traits=mon))
 
 #Visualizations of the beta metrics
 head(beta_metrics)
-beta_metrics<-merge(beta_metrics,sorenson,c("To","From"))
 
 #Get rid of the nestedness components
-beta_metrics<-beta_metrics[,colnames(beta_metrics) %in% c("To","From","beta_functional","Phylosor.Phylo","Sorenson") ]
+beta_metrics<-beta_metrics[,colnames(beta_metrics) %in% c("To","From","MNTD","Phylosor.Phylo","Sorenson") ]
 
 #####################################################
 #Merge Betadiversity and Environmnetal Dissimilairity
 #####################################################
 data.merge<-merge(compare.env,beta_metrics,by=c("To","From"))
 
-save.image("C:/Users/Ben/Dropbox/Shared Ben and Catherine/DimDivRevision/Results/DimDivRevision.RData")
+save.image("/home1/02443/bw4sz/DimDiv/DimDivRevisionCluster.RData")
 
 #################################################################################
 #The Null model on 219*219 assemblages is 23871 comparisons, this is too extreme to do in a reasonable time
@@ -162,7 +189,7 @@ save.image("C:/Users/Ben/Dropbox/Shared Ben and Catherine/DimDivRevision/Results
 table(null_taxlists$Sorenson_Null)
 
 #Get just the high and low comparisons, the number of null comparisons is equal to the number of rows in this matrix
-taxHL<-null_taxdf[null_taxlists$Sorenson_Null=="High"|null_taxlists$Sorenson_Null=="Low",]
+taxHL<-null_taxlists[null_taxlists$Sorenson_Null=="High"|null_taxlists$Sorenson_Null=="Low",]
 nrow(taxHL)
 
 #Richness of the assemblages
@@ -172,14 +199,14 @@ richness_sites<-apply(siteXspp,1,sum)
 sp.list<-apply(siteXspp,1,function(x){
   names(x[which(x==1)])
 })
-
 ############################
-#Null model for phylogenetic and trait
+#Null model for taxonomic phylogenetic and trait
 ############################
-
-Null_dataframe<-foreach(j=1:1000,.combine=rbind,.packages=c("foreach","reshape","picante")) %dopar% {
+system.time(
+Null_dataframe<-foreach(j=1:500,.combine=rbind,.packages=c("foreach","reshape","picante")) %dopar% {
   
 nullPT<-lapply(1:nrow(taxHL),function(x){
+print(x)
   #Richness of the two assemblages
   richness_To<-richness_sites[names(richness_sites) %in% taxHL[x,]$To]
   richness_From<-richness_sites[names(richness_sites) %in% taxHL[x,]$From]
@@ -223,12 +250,15 @@ nullPT<-lapply(1:nrow(taxHL),function(x){
 
 nullPT<-rbind.fill(nullPT)
 return(data.frame(nullPT,Iteration=j))
-}
+})
 
+
+save.image("/home1/02443/bw4sz/DimDiv/DimDivRevisionCluster.RData")
 
 #Keep desired columns, ignoring nestedness components
-Null_dataframe<-Null_dataframe[,colnames(Null_dataframe) %in% c("To","From","beta_functional","Phylosor.Phylo","Sorenson","Iteration") ]
+Null_dataframe<-Null_dataframe[,colnames(Null_dataframe) %in% c("To","From","MNTD","Phylosor.Phylo","Sorenson","Iteration") ]
 
+nrow(Null_dataframe)
 ######################################################################
 #######################Null Model Analysis, defining "High and Low"
 ######################################################################
@@ -248,8 +278,10 @@ data.cNull<-data.merge[index_datamerge %in% index_taxHL,]
 #Not included since it is specific the particular supercomputing cluster used, and not transferable.
 
 #For each pair of assemblage compare the observed metrics to the null distribution. 
-null_lists<-list()
-for (x in 1:nrow(data.cNull)){
+
+print(nrow(data.cNull))
+
+null_PhyloTrait<-foreach(x=1:nrow(data.cNull),.combine=rbind) %dopar% {
    
   #Select Row
   rowS<-data.cNull[x,]
@@ -257,40 +289,40 @@ for (x in 1:nrow(data.cNull)){
   #Grab all the iteration rows that match these richness 
   null_rows<-Null_dataframe[Null_dataframe$To==rowS$To & Null_dataframe$From==rowS$From,]
   
-  null_stats<-sapply(colnames(null_rows)[!colnames(null_rows) %in% c("To","From","Iteration")],function(y){
+  null_stats<-sapply(colnames(null_rows)[!colnames(null_rows) %in% c("To","From","Iteration","Sorenson")],function(y){
         
-    if(!is.finite(rowS[,y])) return(NA)
+    if(!is.finite(rowS[,y])) {return(NA)}
     #Create a distribution of null values
     test_stat<-ecdf(null_rows[,y]) (rowS[,y])
     
-        if(test_stat >= .95) return(answer<-"High")
-    if(test_stat <= .05) return(answer<-"Low")
-    if( test_stat <= .95 & test_stat >= .05 ) return(answer<-"Random")
+      if(test_stat >= .95) {return(answer<-"High")}
+    if(test_stat <= .05) {return(answer<-"Low")}
+    if( test_stat <= .95 & test_stat >= .05 ) {return(answer<-"Random")}
     return(answer)
   })
-  
-  null_lists[[x]]<-data.frame(t(c(To=rowS$To,From=rowS$From,null_stats)))
+  out<-data.frame(t(c(To=rowS$To,From=rowS$From,null_stats)))
+  print(out)
+return(out)
 }
 
 #Bind together the null model outputs
-rownames(null_lists)<-NULL
-null_PhyloTrait<-rbind.fill(null_lists)
-colnames(null_PhyloTrait)<-c("To","From",paste(colnames(Null_dataframe)[!colnames(Null_dataframe) %in% c("To","From","Iteration")],"Null",sep="_"))
+colnames(null_PhyloTrait)<-c("To","From",paste(colnames(Null_dataframe)[!colnames(Null_dataframe) %in% c("To","From","Iteration","Sorenson")],"Null",sep="_"))
 
 #Combine the environmental, observed and null metrics into a huge dataframe
 data.df.null<-merge(data.merge,null_PhyloTrait,by=c("To","From"))
-data.df.null<-merge(data.df.null,null_taxdf,by=c("To","From"))
+data.df.null<-merge(data.df.null,null_taxlists,by=c("To","From"))
+
 
 #Legacy correction, data.merge is data.df, sorry
 data.df<-data.merge
 
+setwd("/home1/02443/bw4sz/")
 #Write to file
-write.csv(data.df,"FinalData.csv")
-write.csv(data.df.null,"FinalDataNull.csv")
-
+write.csv(data.df,"/home1/02443/bw4sz/DimDiv/FinalData.csv")
+write.csv(data.df.null,"/home1/02443/bw4sz/DimDiv/FinalDataNull.csv")
 
 #Or save data
-save.image("C:/Users/Ben/Dropbox/Shared Ben and Catherine/DimDivRevision/Results/DimDivRevision.RData")
+save.image("/home1/02443/bw4sz/DimDiv/DimDivRevisionCluster.RData")
 
 #Data Generation Complete
 ##########################################################################################
@@ -300,8 +332,8 @@ save.image("C:/Users/Ben/Dropbox/Shared Ben and Catherine/DimDivRevision/Results
 #Tables and Statistics
 #########################################################################################
 
-setwd("/home1/02443/bw4sz/")
-dir.create("DimDivResults")
+setwd("/home1/02443/bw4sz/DimDiv")
+dir.create("/home1/02443/bw4sz/DimDivResults")
 setwd("DimDivResults")
 #Get the bounds of each 
 range_metrics<-list()
@@ -332,21 +364,12 @@ data_prev<-data_prev[,-1]
 
 write.csv(round(data_prev,3)*100,"NullPrevalence.csv")
 
-
 ##################################################################
 #######################ScatterPlots###############################
 ##################################################################
 
-#PCDp Phylo and hulls
-#PCD func and PCD phylo
-p<-ggplot(data.df,aes(y=beta_functional,x=Phylosor.Phylo,col=Sorenson)) + geom_point() 
-p<-p+ theme_bw() + scale_color_gradient("Sorenson",low="gray90",high="black")
-p<-p+ ylab("Trait Betadiversity") + xlab("Phylogenetic Betadiversity") + coord_equal()
-p
-ggsave("PhylosorPhylovConvexHull_Taxonomic.svg",height=7,width=7.5,dpi=300)
-
 #Phylo phylosor and Hulls
-p<-ggplot(data.df,aes(y=beta_functional,x=Phylosor.Phylo,col=Elev)) + geom_point() 
+p<-ggplot(data.df,aes(y=MNTD,x=Phylosor.Phylo,col=Elev)) + geom_point() 
 p<-p+ theme_bw() + scale_color_gradient("Elevation",low="gray90",high="black")
 p<-p+ ylab("Trait Convex Hull") + xlab("Phylogenetic Phylosor") + coord_equal()
 p
@@ -373,7 +396,7 @@ range_plots<-lapply(12:14,function(x){
 #Create multiple options for the hyplist, hold them in a list and spit them to file seperately
 
 Hyplist.func<-function(Tax,Phylo,Func){
-  setwd("/home1/02443/bw4sz/DimDivResults")
+  setwd("/home1/02443/bw4sz/DimDiv/DimDivResults")
   #Create directory
   dir.store<-dir.create(paste(Tax,Phylo,Func,sep="_"))
   setwd(paste(Tax,Phylo,Func,sep="_"))
@@ -410,7 +433,7 @@ Hyplist.func<-function(Tax,Phylo,Func){
   #create parallel cluster
   
   #run 1000 iterations
-  boot.run<-foreach(x=1:1000,.export="data.df") %do% {
+  boot.run<-foreach(x=1:1000,.export="data.df") %dopar% {
     
     require(reshape)
     require(boot)
@@ -486,7 +509,7 @@ Hyplist.func<-function(Tax,Phylo,Func){
   remove.level<-levels(as.factor(HypBox$L1))[str_detect(levels(as.factor(HypBox$L1)),"Random")]
   HypBox<-HypBox[!HypBox$L1 %in% remove.level,]
   
-  setwd("/home1/02443/bw4sz/DimDiv/Results")
+  setwd("/home1/02443/bw4sz/DimDiv/DimDivResults")
   setwd(paste(Tax,Phylo,Func,sep="_"))
   dir.create("3WayBoxplots")
   setwd("3WayBoxplots")
@@ -515,82 +538,21 @@ Hyplist.func<-function(Tax,Phylo,Func){
   ggsave("Env3Boxplots.svg",dpi=300,height=8,width=12)
   ggsave("Env3Boxplots.jpeg",dpi=300,height=8,width=12)
   
-  #Draw Lines between all hypothesis one sites
-  #elevr<-raster("C:\\Users\\Ben\\Dropbox\\Shared Ben and Catherine\\DimDivEntire\\Files for Analysis\\studyarea_1km.tif")
   
-  #Function for spatial lines for all hypothesis, overlayed on an Ecuador Map
-  
-  #ugly function to get to the directory level, sorry. 
-  setwd("/home1/02443/bw4sz/DimDivResults")
-  setwd(paste(Tax,Phylo,Func,sep="_"))
-  dir.create("Maps")
-  setwd("Maps")
-  
-  #only Create maps of three way comparisons
- 
-  #Lines for each hypothesis, plotted individually
-  #plot all combinations
-  map_names<-c("Low.Low.Low","High.Low.Low","High.High.Low","Low.High.Low","High.High.High","Low.High.High","Low.Low.High","High.Low.High")
-  
-  maps.Hyp<-foreach(f=1:length(map_names),.packages=c("reshape","raster","rgdal")) %do% {
-    jpeg(paste(map_names[f],"RowSwap.jpeg",sep=""),height= 10, width = 10, unit="in", res=300)
-    if(length(Hyplist[[map_names[f]]])>0){
-      coords<-apply(Hyplist[[map_names[f]]],1,function(x){
-        x_stat<-Envtable[Envtable$CommID %in% as.numeric(x["To"]),c("LatDecDeg","LongDecDeg")]
-        y_stat<-Envtable[Envtable$CommID %in% as.numeric(x["From"]),c("LatDecDeg","LongDecDeg")]
-        comb<-data.frame(x_stat,y_stat)
-        colnames(comb)<-c("xmin","ymin","xmax","ymax")
-        return(comb)
-      })
-      cordmatrix<-rbind.fill(coords)
-    }
-    plot(elevr, axes=FALSE,main="",legend=F,col=colorRampPalette(c("grey90", "grey6"))(255))
-    if(length(Hyplist[[map_names[f]]])>0){
-      for (j in 1:nrow(cordmatrix)) {
-        arrows(y0=cordmatrix[j,1],x0=cordmatrix[j,2],y1=cordmatrix[j,3],x1=cordmatrix[j,4],length=0, lwd=1,col="grey20")}
-    }
-    points(loc, col='grey20', pch=15,cex=.5)
-    dev.off()
-  }
-  
-  
-  # Together on one graph, if needed.
-  jpeg("AllhypothesisRowSwap.jpeg",quality=100,res=300,units="in",height=12,width=20)
-  par(mfrow=c(2,4))
-  
-  #Plot lines
-  
-  for (x in 1:length(Hyplist)){
-    coords<-apply(Hyplist[[x]],1,function(x){
-      x_stat<-Envtable[Envtable$CommID %in% as.numeric(x["To"]),c("LatDecDeg","LongDecDeg")]
-      y_stat<-Envtable[Envtable$CommID %in% as.numeric(x["From"]),c("LatDecDeg","LongDecDeg")]
-      comb<-cbind(x_stat,y_stat)
-      colnames(comb)<-c("xmin","xmax","ymin","ymax")
-      return(comb)
-    })
-    cordmatrix<-rbind.fill(coords)
-    
-    #Plot map and create arrows between assemblages
-    plot(elevr, axes=FALSE,main=names(Hyplist)[x],legend=F,col=colorRampPalette(c("grey90", "grey6"))(255))
-    points(loc, col='red', pch=10,cex=.5)
-    for (x in 1:nrow(cordmatrix)) {
-      arrows(y0=cordmatrix[x,1],x0=cordmatrix[x,2],y1=cordmatrix[x,3],x1=cordmatrix[x,4],length=0, lwd=1)
-      
-    }
-  }
-  dev.off()
-  
-  
-  ###Done
   #save data from that run
-  setwd("/home1/02443/bw4sz/DimDivResults")
+  setwd("/home1/02443/bw4sz/DimDiv/DimDivResults")
   setwd(paste(Tax,Phylo,Func,sep="_"))
   
+#Maps need rgdal, can't be done here
   save.image("plotting.Rdata")
 }
 
 #Run the plotting function for all sets of hypothesis
 
-system.time(Hyplist.func(Tax="Sorenson_Null",Phylo="Phylosor.Phylo_Null",Func="beta_functional_Null"))
+system.time(Hyplist.func(Tax="Sorenson_Null",Phylo="Phylosor.Phylo_Null",Func="MNTD_Null"))
 
-save.image("/home1/02443/bw4sz/DimDivRevision.RData")
+save.image("/home1/02443/bw4sz/DimDiv/DimDivRevisionCluster.RData")
+stopCluster(cluster)
+q()
+n
+exit
