@@ -5,7 +5,7 @@
 #SBATCH -p normal
 #SBATCH -t 24:00:00
 #SBATCH -A TG-TRA120007   
-#SBATCH -n 50 # Total cores
+#SBATCH -n 100 # Total cores
 
 #SBATCH --mail-user=benweinstein2010@gmail.com
 #SBATCH --mail-type=begin
