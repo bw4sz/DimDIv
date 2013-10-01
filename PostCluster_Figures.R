@@ -53,7 +53,8 @@ write.csv(range_metrics,"Range_Metrics.csv")
 
 #Find Prevalence of each combination
 data_prev<-lapply(colnames(data.df.null)[15:17],function(x){
-  range_prev<-table(data.df.null[,x])/(nrow(comm)*(nrow(comm)-1))/2})
+  range_prev<-table(data.df.null[,x])/(nrow(comm)*(nrow(comm)-1)/2)
+  })
 
 names(data_prev)<-colnames(data.df.null)[15:17]
 data_prev<-melt(data_prev)
@@ -131,7 +132,7 @@ Hyplist.func<-function(Tax,Phylo,Func){
   HypBox<-melt(Hyplist, id.vars=c("To","From"),measure.vars=c("Euclid","CostPathCost","AnnualPrecip","Elev"))
   
   #Proportion of combinations for each null model, later make a recursive object that grabs this output for plotting
-  prop.Hyp<-melt(sapply(Hyplist,nrow)/nrow(data.df))*100
+  prop.Hyp<-melt(sapply(Hyplist,nrow)/nrow(data.df)*100)
   prop.Hyp$Hyp<-as.character(rownames( prop.Hyp))
   write.csv(prop.Hyp,"ProportionHypotheses.csv")
   
@@ -257,7 +258,7 @@ Hyplist.func<-function(Tax,Phylo,Func){
   #plot all combinations
   map_names<-c("Low.Low.Low","High.Low.Low","High.High.Low","Low.High.Low","High.High.High","Low.High.High","Low.Low.High","High.Low.High")
   
-  cl<-makeCluster(2,"SOCK")
+  cl<-makeCluster(7,"SOCK")
   maps.Hyp<-foreach(f=1:length(map_names),.packages=c("reshape","raster","rgdal")) %do% {
     jpeg(paste(map_names[f],"RowSwap.jpeg",sep=""),height= 10, width = 10, unit="in", res=300)
     if(length(Hyplist[[map_names[f]]])>0){
@@ -270,20 +271,20 @@ Hyplist.func<-function(Tax,Phylo,Func){
       })
       cordmatrix<-rbind.fill(coords)
     }
-    plot(elevr, axes=FALSE,main="",legend=F,col=colorRampPalette(c("grey90", "grey6"))(255))
+    plot(elevr, axes=FALSE,main="",legend=F,col=colorRampPalette(c("grey95", "grey10"))(255))
     if(length(Hyplist[[map_names[f]]])>0){
       for (j in 1:nrow(cordmatrix)) {
-        arrows(y0=cordmatrix[j,1],x0=cordmatrix[j,2],y1=cordmatrix[j,3],x1=cordmatrix[j,4],length=0, lwd=1,col="grey20")}
+        arrows(y0=cordmatrix[j,1],x0=cordmatrix[j,2],y1=cordmatrix[j,3],x1=cordmatrix[j,4],length=0, lwd=1,col="black")}
     }
-    points(loc, col='grey20', pch=15,cex=.5)
+    points(loc, col='grey10', pch=15,cex=.5)
     dev.off()
   }
   stopCluster(cl)
   
   
   # Together on one graph, if needed.
-  jpeg("AllhypothesisRowSwap.jpeg",quality=100,res=300,units="in",height=12,width=20)
-  par(mfrow=c(2,4))
+  #jpeg("AllhypothesisRowSwap.jpeg",quality=100,res=300,units="in",height=12,width=20)
+  #par(mfrow=c(2,4))
   
   #Plot lines
   
@@ -305,7 +306,7 @@ Hyplist.func<-function(Tax,Phylo,Func){
       
     }
   }
-  dev.off()
+ # dev.off()
   
   
   ###Done
