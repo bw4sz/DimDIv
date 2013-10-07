@@ -26,7 +26,7 @@ require(stringr)
 require(scales)
 
 #load data from cluster
-load("C:/Users/Jorge/Dropbox/Shared Ben and Catherine/DimDivRevision/ClusterResults/DimDivRevisionCluster.RData")
+load("C:/Users/Jorge/Dropbox/Shared Ben and Catherine/DimDivRevision/1000Iterations//DimDivRevisionCluster.RData")
 
 ##########################################################################################
 #Tables and Statistics
@@ -206,7 +206,7 @@ Hyplist.func<-function(Tax,Phylo,Func){
   
   for(x in 1:length(Hyplist)){
     n<-names(Hyplist[x])
-    write.csv(Hyplist[[x]],paste(n,"rowSwap.csv"),row.names=FALSE)}
+    write.csv(Hyplist[[x]],paste(n,".csv"),row.names=FALSE)}
   
   #Show three way combinations only.
   #Remove all random combinations
@@ -229,6 +229,7 @@ Hyplist.func<-function(Tax,Phylo,Func){
   colnames(HypBox)<-c("To","From","Diss","value","Hyp")
   intercepts<-data.frame(Diss=levels(HypBox$Diss),value=round(apply(data.df[,levels(HypBox$Diss)],2,median,na.rm=TRUE),2))
 
+  
   #Plot all simultanously, need to get intercepts on the plot?
   #add in empty levels?
   #Which levels are we missing
@@ -260,7 +261,7 @@ Hyplist.func<-function(Tax,Phylo,Func){
   
   cl<-makeCluster(7,"SOCK")
   maps.Hyp<-foreach(f=1:length(map_names),.packages=c("reshape","raster","rgdal")) %do% {
-    jpeg(paste(map_names[f],"RowSwap.jpeg",sep=""),height= 10, width = 10, unit="in", res=300)
+    jpeg(paste(map_names[f],".jpeg",sep=""),height= 10, width = 10, unit="in", res=300)
     if(length(Hyplist[[map_names[f]]])>0){
       coords<-apply(Hyplist[[map_names[f]]],1,function(x){
         x_stat<-Envtable[Envtable$CommID %in% as.numeric(x["To"]),c("LatDecDeg","LongDecDeg")]
