@@ -36,6 +36,7 @@ print(unlist(names))
 registerDoSNOW(cluster)
 load("/home1/02443/bw4sz/DimDiv/DimDivRevisionCluster.RData")
 
+#Begin Part 3
 nrow(Null_dataframe)
 ######################################################################
 #######################Null Model Analysis, defining "High and Low"

@@ -26,11 +26,8 @@ require(stringr)
 require(scales)
 
 #load data from cluster
-<<<<<<< HEAD
-load("C:/Users/Ben//Dropbox/Shared Ben and Catherine/DimDivRevision/1000Iterations//DimDivRevisionCluster.RData")
-=======
-load("C:/Users/Jorge/Dropbox/Shared Ben and Catherine/DimDivRevision/1000Iterations//DimDivRevisionCluster.RData")
->>>>>>> 80afca7842843c8e2e41769b1173cbf9baba90a0
+
+load("C:/Users/Jorge//Dropbox/Shared Ben and Catherine/DimDivRevision/1000Iterations//DimDivRevisionCluster.RData")
 
 ##########################################################################################
 #Tables and Statistics
