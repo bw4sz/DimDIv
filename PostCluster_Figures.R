@@ -26,13 +26,13 @@ require(stringr)
 require(scales)
 
 #load data from cluster
-load("C:/Users/Jorge/Dropbox/Shared Ben and Catherine/DimDivRevision/ClusterResults/DimDivRevisionCluster.RData")
+load("C:/Users/Ben//Dropbox/Shared Ben and Catherine/DimDivRevision/1000Iterations//DimDivRevisionCluster.RData")
 
 ##########################################################################################
 #Tables and Statistics
 #########################################################################################
 
-setwd("C:\\Users\\Jorge\\Dropbox\\Shared Ben and Catherine\\DimDivRevision\\Results")
+setwd("C:\\Users\\Ben\\Dropbox\\Shared Ben and Catherine\\DimDivRevision\\Results")
 
 #Get the bounds of each 
 range_metrics<-list()
@@ -68,7 +68,7 @@ write.csv(round(data_prev,3)*100,"NullPrevalence.csv")
 #######################ScatterPlots###############################
 ##################################################################
 
-#Trait versus Phylogenetic
+#Trait versus Phylogenetic, 
 p<-ggplot(data.df,aes(y=MNTD,x=Phylosor.Phylo,col=Sorenson)) + geom_point() 
 p<-p+ theme_bw() + scale_color_gradient("Sorenson",low="gray90",high="black")
 p<-p+ ylab("Trait Betadiversity") + xlab("Phylogenetic Betadiversity")
@@ -113,10 +113,10 @@ range_plots<-lapply(12:14,function(x){
 #Create a function that takes the input of which null metrics you want to use to create output lists
 #Create multiple options for the hyplist, hold them in a list and spit them to file seperately
 
-setwd("C:\\Users\\Jorge\\Dropbox\\Shared Ben and Catherine\\DimDivRevision\\Results")
+setwd("C:\\Users\\Ben\\Dropbox\\Shared Ben and Catherine\\DimDivRevision\\Results")
 
 Hyplist.func<-function(Tax,Phylo,Func){
-  setwd("C:\\Users\\Jorge\\Dropbox\\Shared Ben and Catherine\\DimDivRevision\\Results")
+  setwd("C:\\Users\\Ben\\Dropbox\\Shared Ben and Catherine\\DimDivRevision\\Results")
   #Create directory
   dir.store<-dir.create(paste(Tax,Phylo,Func,sep="_"))
   setwd(paste(Tax,Phylo,Func,sep="_"))
@@ -213,7 +213,7 @@ Hyplist.func<-function(Tax,Phylo,Func){
   remove.level<-levels(as.factor(HypBox$L1))[str_detect(levels(as.factor(HypBox$L1)),"Random")]
   HypBox<-HypBox[!HypBox$L1 %in% remove.level,]
   
-  setwd("C:\\Users\\Jorge\\Dropbox\\Shared Ben and Catherine\\DimDivRevision\\Results")
+  setwd("C:\\Users\\Ben\\Dropbox\\Shared Ben and Catherine\\DimDivRevision\\Results")
   setwd(paste(Tax,Phylo,Func,sep="_"))
   dir.create("3WayBoxplots")
   setwd("3WayBoxplots")
@@ -242,12 +242,12 @@ Hyplist.func<-function(Tax,Phylo,Func){
   ggsave("Env3Boxplots.jpeg",dpi=300,height=8,width=12)
   
   #Draw Lines between all hypothesis one sites
-  elevr<-raster("C:\\Users\\Jorge\\Dropbox\\Shared Ben and Catherine\\DimDivEntire\\Files for Analysis\\studyarea_1km.tif")
+  elevr<-raster("C:\\Users\\Ben\\Dropbox\\Shared Ben and Catherine\\DimDivEntire\\Files for Analysis\\studyarea_1km.tif")
   
   #Function for spatial lines for all hypothesis, overlayed on an Ecuador Map
   
   #ugly function to get to the directory level, sorry. 
-  setwd("C:\\Users\\Jorge\\Dropbox\\Shared Ben and Catherine\\DimDivRevision\\Results")
+  setwd("C:\\Users\\Ben\\Dropbox\\Shared Ben and Catherine\\DimDivRevision\\Results")
   setwd(paste(Tax,Phylo,Func,sep="_"))
   dir.create("Maps")
   setwd("Maps")
@@ -311,7 +311,7 @@ Hyplist.func<-function(Tax,Phylo,Func){
   
   ###Done
   #save data from that run
-  setwd("C:\\Users\\Jorge\\Dropbox\\Shared Ben and Catherine\\DimDivRevision\\Results")
+  setwd("C:\\Users\\Ben\\Dropbox\\Shared Ben and Catherine\\DimDivRevision\\Results")
   setwd(paste(Tax,Phylo,Func,sep="_"))
   
   save.image("plotting.Rdata")
