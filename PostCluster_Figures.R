@@ -26,6 +26,7 @@ require(stringr)
 require(scales)
 
 #load data from cluster
+<<<<<<< HEAD
 #HEAD
 
 #load("C:/Users/Ben//Dropbox/Shared Ben and Catherine/DimDivRevision/500Iterations/DimDivRevisionCluster.RData")
@@ -34,8 +35,10 @@ data.df<-read.csv("C:/Users/Ben//Dropbox/Shared Ben and Catherine/DimDivRevision
 
 data.df.null<-read.csv("C:/Users/Ben//Dropbox/Shared Ben and Catherine/DimDivRevision/500Iterations/FinalDataNull.csv")
 
+=======
 
 load("C:/Users/Jorge//Dropbox/Shared Ben and Catherine/DimDivRevision/1000Iterations//DimDivRevisionCluster.RData")
+>>>>>>> a1a658389cdfac15e6120621985e58731dd949db
 
 ##########################################################################################
 #Tables and Statistics
