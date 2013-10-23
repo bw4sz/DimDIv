@@ -50,8 +50,6 @@ table(null_rows$Sorenson)
 
 #That's not right!
 
-
-
 ###Inspect the randomization matrix
 #Pick a row
 SorTest<-function(x){

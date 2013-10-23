@@ -35,6 +35,8 @@ data.df<-read.csv("C:/Users/Ben//Dropbox/Shared Ben and Catherine/DimDivRevision
 data.df.null<-read.csv("C:/Users/Ben//Dropbox/Shared Ben and Catherine/DimDivRevision/500Iterations/FinalDataNull.csv")
 
 
+load("C:/Users/Jorge//Dropbox/Shared Ben and Catherine/DimDivRevision/1000Iterations//DimDivRevisionCluster.RData")
+
 ##########################################################################################
 #Tables and Statistics
 #########################################################################################
