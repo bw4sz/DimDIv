@@ -26,11 +26,14 @@ require(stringr)
 require(scales)
 
 #load data from cluster
-<<<<<<< HEAD
-load("C:/Users/Ben//Dropbox/Shared Ben and Catherine/DimDivRevision/1000Iterations//DimDivRevisionCluster.RData")
-=======
-load("C:/Users/Jorge/Dropbox/Shared Ben and Catherine/DimDivRevision/1000Iterations//DimDivRevisionCluster.RData")
->>>>>>> 80afca7842843c8e2e41769b1173cbf9baba90a0
+#HEAD
+
+#load("C:/Users/Ben//Dropbox/Shared Ben and Catherine/DimDivRevision/500Iterations/DimDivRevisionCluster.RData")
+
+data.df<-read.csv("C:/Users/Ben//Dropbox/Shared Ben and Catherine/DimDivRevision/500Iterations/FinalData.csv")
+
+data.df.null<-read.csv("C:/Users/Ben//Dropbox/Shared Ben and Catherine/DimDivRevision/500Iterations/FinalDataNull.csv")
+
 
 ##########################################################################################
 #Tables and Statistics
@@ -287,14 +290,21 @@ Hyplist.func<-function(Tax,Phylo,Func){
   stopCluster(cl)
   
   
-  # Together on one graph, if needed.
-  #jpeg("AllhypothesisRowSwap.jpeg",quality=100,res=300,units="in",height=12,width=20)
-  #par(mfrow=c(2,4))
+  #Just show the three diversity metrics each
   
   #Plot lines
+  SorensonHL<-split(data.df.null,data.df.null$Sorenson_Null)
+  PhylosorHL<-split(data.df.null,data.df.null$Phylosor.Phylo_Null)
+  MNTDHL<-split(data.df.null,data.df.null$MNTD_Null)
   
-  for (x in 1:length(Hyplist)){
-    coords<-apply(Hyplist[[x]],1,function(x){
+  one_way<-list(SorensonHL,PhylosorHL,MNTDHL)
+  names(one_way)<-c("Taxonomic","Phylogenetic","Trait")
+  
+  for(y in 1:length(one_way)){
+    one<-one_way[y]
+  for (x in 1:length(one)){
+    Hyplist<-one[[x]]
+    coords<-apply(Hyplist,1,function(x){
       x_stat<-Envtable[Envtable$CommID %in% as.numeric(x["To"]),c("LatDecDeg","LongDecDeg")]
       y_stat<-Envtable[Envtable$CommID %in% as.numeric(x["From"]),c("LatDecDeg","LongDecDeg")]
       comb<-cbind(x_stat,y_stat)
@@ -304,7 +314,7 @@ Hyplist.func<-function(Tax,Phylo,Func){
     cordmatrix<-rbind.fill(coords)
     
     #Plot map and create arrows between assemblages
-    plot(elevr, axes=FALSE,main=names(Hyplist)[x],legend=F,col=colorRampPalette(c("grey90", "grey6"))(255))
+    plot(elevr, axes=FALSE,main=names(Hyplist),legend=F,col=colorRampPalette(c("grey90", "grey6"))(255))
     points(loc, col='red', pch=10,cex=.5)
     for (x in 1:nrow(cordmatrix)) {
       arrows(y0=cordmatrix[x,1],x0=cordmatrix[x,2],y1=cordmatrix[x,3],x1=cordmatrix[x,4],length=0, lwd=1)

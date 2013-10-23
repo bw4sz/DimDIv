@@ -20,9 +20,9 @@ library(multicore)
 library(foreach)
 require(raster)
 require(boot)
-library(Rmpi)
+#library(Rmpi)
 
-cluster <- getMPIcluster()
+#cluster <- getMPIcluster()
  
 # Print the hostname for each cluster member
  sayhello <- function()
