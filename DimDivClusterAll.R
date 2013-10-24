@@ -4,8 +4,8 @@
 #Ben Gregory Weinstein, corresponding author - alll code below was writen by BGW
 #Boris A. Tinoco, Juan L. Parra, PhD, Leone M. Brown, PhD, Gary Stiles, PhD, Jim A. McGuire, PhD, Catherine H. Graham, PhD
 
-#require(RMPI)
-#require(doSNOW)
+require(Rmpi)
+require(doSNOW)
 require(vegan)
 require(reshape)
 require(ape)
@@ -20,8 +20,8 @@ library(foreach)
 require(raster)
 require(boot)
 
-cluster<-makeCluster(4,"SOCK")
-#cluster <- getMPIcluster()
+#cluster<-makeCluster(4,"SOCK")
+cluster <- getMPIcluster()
 
 # Print the hostname for each cluster member
 sayhello <- function()
@@ -50,9 +50,9 @@ print(unlist(names))
 ##########################################################
 
 #Load in the data
-#load("/home1/02443/bw4sz/DimDiv/DimDivRevision.RData")
+load("/home1/02443/bw4sz/DimDiv/DimDivRevision.RData")
 
-comm<-siteXspp[1:20,]
+comm<-siteXspp[,]
 
 dim(comm)
 
@@ -67,56 +67,54 @@ ls()
 
 #####################################
 ##Taxonomic Betadiversity
-d<-as.matrix(vegdist(comm,binary=TRUE,upper=FALSE,diag=FALSE))
-sorenson<-melt(d)[melt(upper.tri(d))$value,]
-colnames(sorenson)<-c("To","From","Sorenson")
+#d<-as.matrix(vegdist(comm,binary=TRUE,upper=FALSE,diag=FALSE))
+#sorenson<-melt(d)[melt(upper.tri(d))$value,]
+#colnames(sorenson)<-c("To","From","Sorenson")
 ######################################
 
 #Null model off taxonomic diversity with respect to richness
-tax_nullM<-rbind.fill(lapply(1:5,function(x){
-  null_comm<-commsimulator(comm,method="r0")
-  d<-as.matrix(vegdist(null_comm,binary=TRUE,upper=FALSE,diag=FALSE))
-  sorenson<-data.frame(melt(d)[melt(upper.tri(d))$value,],Iteration=x)
-  colnames(sorenson)<-c("To","From","Sorenson","Iteration")
-  return(sorenson)}))
+#tax_nullM<-rbind.fill(lapply(1:1000,function(x){
+ # null_comm<-commsimulator(comm,method="r0")
+  #d<-as.matrix(vegdist(null_comm,binary=TRUE,upper=FALSE,diag=FALSE))
+  #sorenson<-data.frame(melt(d)[melt(upper.tri(d))$value,],Iteration=x)
+  #colnames(sorenson)<-c("To","From","Sorenson","Iteration")
+  #return(sorenson)}))
 
 #For each pair of assemblage compare the observed metrics to the null distribution. 
 
-nrow(tax_nullM)
-nrow(sorenson)
-head(sorenson)
+#nrow(tax_nullM)
+#nrow(sorenson)
+#head(sorenson)
 
 #Define function that runs through sorenson index.
-Sorenson_N<-function(x){ 
+#Sorenson_N<-function(x){ 
   #Select Row
-  rowS<-sorenson[x,]
+ # rowS<-sorenson[x,]
   
   #Grab all the iteration rows that match these richness 
-  null_rows<-tax_nullM[tax_nullM$To==rowS$To & tax_nullM$From==rowS$From,]
+  #null_rows<-tax_nullM[tax_nullM$To==rowS$To & tax_nullM$From==rowS$From,]
   
   #Create a distribution of null values
-  test_stat<-ecdf(null_rows[,"Sorenson"]) (rowS[,"Sorenson"])
+  #test_stat<-ecdf(null_rows[,"Sorenson"]) (rowS[,"Sorenson"])
   
-  if(test_stat >= .95) {answer<-"High"}
-  if(test_stat <= .05) {answer<-"Low"}
-  if( test_stat <= .95 & test_stat >= .05 ) {answer<-"Random"}
+  #if(test_stat >= .95) {answer<-"High"}
+  #if(test_stat <= .05) {answer<-"Low"}
+  #if( test_stat <= .95 & test_stat >= .05 ) {answer<-"Random"}
   
-  return(data.frame(t(c(To=rowS$To,From=rowS$From,Sorenson_Null=answer))))
-}
+ # return(data.frame(t(c(To=rowS$To,From=rowS$From,Sorenson_Null=answer))))
+#}
 
 #Export objects to cluster
-clusterExport(cluster, list("sorenson", "tax_nullM"))
+#clusterExport(cluster, list("sorenson", "tax_nullM"))
 
-null_taxlists<-rbind.fill(clusterApply(cluster,1:10,Sorenson_N))
+#null_taxlists<-rbind.fill(clusterApply(cluster,1:nrow(sorenson),Sorenson_N))
 
-stopCluster(cluster)
 
 #####################################################
 #Perform Phylogenetic and Trait Betadiversity
 #####################################################
 
-cluster<-makeCluster(4,"SOCK")
-#cluster <- getMPIcluster()
+#Define Betadiversity function
 
 beta_all<-function(comm,tree,traits){
   
@@ -147,8 +145,9 @@ beta_all<-function(comm,tree,traits){
   
   prc_traits<-prcomp(mon_cut)
   newSGdist <- dist(prc_traits$x)
-  #source("/home1/02443/bw4sz/DimDiv/BenHolttraitDiversity.R")
-  source("BenHolttraitDiversity.R")
+  
+source("/home1/02443/bw4sz/DimDiv/BenHolttraitDiversity.R")
+  #source("BenHolttraitDiversity.R")
   
   #create sp.list
   sp.list<-lapply(rownames(siteXspp_traits),function(k){
@@ -188,24 +187,27 @@ beta_all<-function(comm,tree,traits){
   
   return(Allmetrics)}
 
-system.time(beta_metrics<-beta_all(comm=comm,tree=tree,traits=mon))
+#system.time(beta_metrics<-beta_all(comm=comm,tree=tree,traits=mon))
 
 #Visualizations of the beta metrics
-head(beta_metrics)
+#head(beta_metrics)
 
 #Get rid of the nestedness components
-beta_metrics<-beta_metrics[,colnames(beta_metrics) %in% c("To","From","MNTD","Phylosor.Phylo","Sorenson") ]
+#beta_metrics<-beta_metrics[,colnames(beta_metrics) %in% c("To","From","MNTD","Phylosor.Phylo","Sorenson") ]
 
 #####################################################
 #Merge Betadiversity and Environmnetal Dissimilairity
 #####################################################
-data.merge<-merge(compare.env,beta_metrics,by=c("To","From"))
+#data.merge<-merge(compare.env,beta_metrics,by=c("To","From"))
 
 #save.image("/home1/02443/bw4sz/DimDiv/DimDivRevisionCluster.RData")
 ###
 #End Part 1
 ###
+
 #Begin Part 2
+
+load("/home1/02443/bw4sz/DimDiv/DimDivRevisionCluster.RData")
 
 #################################################################################
 table(null_taxlists$Sorenson_Null)
@@ -233,7 +235,6 @@ head(splist)
 #####################
 
 Phylo_TraitN<-function(p){
-  #sink("/home1/02443/bw4sz/DimDiv/DimSink.txt")
   require(reshape)
   require(picante)
   require(foreach)
@@ -291,28 +292,31 @@ Phylo_TraitN<-function(p){
   }
   
   print(head(nullPTframe))
-  sink()
   out<-data.frame(nullPTframe,Iteration=p)
+  write.csv(data.frame(nullPTframe,Iteration=p),paste("/home1/02443/bw4sz/DimDiv/Iterations/",paste(p,"iteration.csv",sep="_"),sep=""))
   return(out)
 }
 
 splist<-colnames(siteXspp)
 
 #test function
-print(Phylo_TraitN(2))
+#system.time(print(Phylo_TraitN(2)))
 
 ############################
 #Null model for taxonomic phylogenetic and trait
 ############################
 
 clusterExport(cluster, list("null_taxlists", "splist","sp.list","siteXspp","richness_sites","beta_all","tree","mon"))
-Null_dataframe<-rbind.fill(clusterApply(cluster,1:10,Phylo_TraitN))
+Null_dataframe0<-clusterApply(cluster,1:500,Phylo_TraitN)
 
-stopCluster(cluster)
+Null_dataframe0[[1]]
+
+Null_dataframe<-rbind.fill(Null_dataframe0)
+
 #Keep desired columns, ignoring nestedness components
 Null_dataframe<-Null_dataframe[,colnames(Null_dataframe) %in% c("To","From","MNTD","Phylosor.Phylo","Sorenson","Iteration") ]
 
-#save.image("/home1/02443/bw4sz/DimDiv/DimDivRevisionCluster.RData")
+save.image("/home1/02443/bw4sz/DimDiv/DimDivRevisionCluster.RData")
 
 #Begin Part 3
 nrow(Null_dataframe)
@@ -323,9 +327,6 @@ nrow(Null_dataframe)
 #################################################
 #Perform Null Model on Null Iterations
 #################################################
-
-cluster<-makeCluster(4,"SOCK")
-#cluster <- getMPIcluster()
 
 ##################################################################################
 #Define Function
@@ -365,6 +366,7 @@ clusterExport(cluster, list("data.merge", "Null_dataframe","Null_PT"))
 
 null_PhyloTrait<-rbind.fill(clusterApply(cluster,1:nrow(data.merge),Null_PT))
 
+
 #Bind together the null model outputs
 colnames(null_PhyloTrait)<-c("To","From",paste(colnames(Null_dataframe)[!colnames(Null_dataframe) %in% c("To","From","Iteration","Sorenson")],"Null",sep="_"))
 
@@ -375,20 +377,19 @@ data.df.null<-merge(data.df.null,null_taxlists,by=c("To","From"))
 #Legacy correction, data.merge is data.df, sorry
 data.df<-data.merge
 
-#setwd("/home1/02443/bw4sz/")
+setwd("/home1/02443/bw4sz/")
 #Write to file
-#write.csv(data.df,"/home1/02443/bw4sz/DimDiv/FinalData.csv")
-#write.csv(data.df.null,"/home1/02443/bw4sz/DimDiv/FinalDataNull.csv")
+write.csv(data.df,"/home1/02443/bw4sz/DimDiv/FinalData.csv")
+write.csv(data.df.null,"/home1/02443/bw4sz/DimDiv/FinalDataNull.csv")
 
 #Or save data
-#save.image("/home1/02443/bw4sz/DimDiv/DimDivRevisionCluster.RData")
+save.image("/home1/02443/bw4sz/DimDiv/DimDivRevisionCluster.RData")
 
 #Data Generation Complete
 ##########################################################################################
 ##########################################################################################
 
 stopCluster(cluster)
-
 #Quit
 q()
 #Don't save
