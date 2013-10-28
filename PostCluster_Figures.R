@@ -230,7 +230,7 @@ Hyplist.func<-function(Tax,Phylo,Func){
   ###############################################
   
   head(HypBox)
-  HypBox[HypBox$variable=="CostPathCost" & HypBox$value > 1.5e9,"value"]<-1.5e9
+  HypBox[HypBox$variable=="CostPathCost" & HypBox$value > quantile(data.df$CostPathCost,.95),"value"]<-NA
   
   #Get the medians
   colnames(HypBox)<-c("To","From","Diss","value","Hyp")
@@ -398,7 +398,7 @@ Hyplist.func<-function(Tax,Phylo,Func){
   
   head(HypBox)
   
-  HypBox[HypBox$variable=="CostPathCost","value"]<-log(HypBox[HypBox$variable=="CostPathCost","value"])
+  
   colnames(HypBox)<-c("To","From","Diss","value","Hyp")
   
   #split the dimension and the direction out 
@@ -406,11 +406,16 @@ Hyplist.func<-function(Tax,Phylo,Func){
   
   #Get the true medians across the entire dataset
   intercepts<-data.frame(Diss=levels(HypBox$Diss),value=round(apply(data.df[,levels(HypBox$Diss)],2,median,na.rm=TRUE),2))
-  #turn costpath intercepts to log
-  intercepts[intercepts$Diss=="CostPathCost","value"]<-log(intercepts[intercepts$Diss=="CostPathCost","value"])
   
+  #remove cost path outliers greater than 95th quartile.
+  HypBox[HypBox$Diss=="CostPathCost" & HypBox$value > quantile(data.df$CostPathCost,.95),"value"]<-NA
+
   p<-ggplot(HypBox,aes(x=Direction,y=value,fill=Dimension)) + geom_boxplot()+ facet_wrap(~Diss,scales="free",drop=FALSE) + theme(axis.text.x = element_text(angle = 90, hjust = 1)) + geom_hline(data=intercepts,aes(yintercept=value,group=Diss), linetype="dashed",col='grey40') + theme_bw() + scale_x_discrete(drop=FALSE)
   p + theme(axis.text.x = element_text(angle = 90, hjust = 1)) + scale_fill_brewer(palette="Greys")
+  
+  #remove outliers greater than the 95th quartile
+  
+  
   ggsave("Env1Boxplots.svg",dpi=300,height=8,width=12)
   ggsave("Env1Boxplots.jpeg",dpi=300,height=8,width=12)
   
@@ -486,7 +491,6 @@ m.sp<-aggregate(morph$ExpC,list(morph$SpID),function(x){
 
 mean(m.sp$x,na.rm=TRUE)
 
-
 #Start with bill length
 ggplot(data=morph,aes(SpID,ExpC)) + theme_bw() + geom_boxplot() + theme(axis.text.x = element_text(angle = 90, hjust = 1)) + facet_wrap(~Clade,nrow=3,scales="free_x") + ylab("Bill Length(mm)")
 
@@ -494,8 +498,6 @@ anova(morph$SpID,morph$ExpC)
 
 ggsave(paste(droppath,"Shared Ben and Catherine\\DimDivRevision\\Results\\CompareMetrics\\BillLength.jpeg",sep=""),height=12,width=20,dpi=300,units="in")   
       
-
-
 #Eliminate any rounding errors for the weight, a couple bad sites from Aves Data Base
 #The heaviest hummingbird in the world is around 22g, eliminate anything larger, clearly some data cleaning issue
 
@@ -503,4 +505,14 @@ morph<-morph[morph$Peso < 24 & !is.na(morph$Peso),]
 
 ggplot(data=morph,aes(SpID,Peso)) + theme_bw() + geom_boxplot() + theme(axis.text.x = element_text(angle = 90, hjust = 1)) + facet_wrap(~Clade,nrow=3,scales="free") + ylab("Bill Length(mm)")
 ggsave(paste(droppath,"Shared Ben and Catherine\\DimDivRevision\\Results\\CompareMetrics\\BillLength.jpeg",sep=""),height=12,width=20,dpi=300,units="in")   
+
+#############################################
+#Multiple Regression Coefficients
+###############################################
+
+require(ppcor)
+pcor.test(data.df$MNTD,data.df$Phylosor.Phylo,data.df$Sorenson)
+
+
+
 
