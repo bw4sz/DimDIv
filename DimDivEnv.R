@@ -29,7 +29,8 @@ require(scales)
 #sink output for overnight runs so we can see it tomorrow
 #sink("C:/Users/Jorge/Dropbox/Shared Ben and Catherine/DimDivRevision/Results/OvernightOutput.txt")
 #load data if desired
-load("C:/Users/Jorge/Dropbox/Shared Ben and Catherine/DimDivRevision/Results/DimDivRevision.RData")
+
+load("C:/Users/Ben/Dropbox/Shared Ben and Catherine/DimDivRevision/Results/DimDivRevision.RData")
 
 ###Define Source Functions
 
