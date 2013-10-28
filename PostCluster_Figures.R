@@ -27,7 +27,7 @@ require(scales)
 
 
 #Set dropbox path
-droppath<-"C:/Users/Jorge//Dropbox/"
+droppath<-"C:/Users/Ben//Dropbox/"
 
 #load data from cluster
 
@@ -36,6 +36,16 @@ load(paste(droppath,"Shared Ben and Catherine/DimDivRevision/500Iterations/DimDi
 data.df<-read.csv(paste(droppath,"Shared Ben and Catherine/DimDivRevision/500Iterations/FinalData.csv",sep=""))
 
 data.df.null<-read.csv(paste(droppath,"Shared Ben and Catherine/DimDivRevision/500Iterations/FinalDataNull.csv",sep=""))
+
+
+#There is an anomaly in the null cluster, if the assemblages are identical, there is no quantile of the distribution, so the cumulative distribution is =1, thus making the null high
+data.df.null[data.df.null$Sorenson==0,]
+
+data.df.null[data.df.null$Sorenson==0,"Phylosor.Phylo_Null"]<-"Low"
+data.df.null[data.df.null$Sorenson==0,"MNTD_Null"]<-"Low"
+
+#set to low!
+
 
 ##########################################################################################
 #Tables and Statistics
@@ -506,6 +516,7 @@ morph<-morph[morph$Peso < 24 & !is.na(morph$Peso),]
 ggplot(data=morph,aes(SpID,Peso)) + theme_bw() + geom_boxplot() + theme(axis.text.x = element_text(angle = 90, hjust = 1)) + facet_wrap(~Clade,nrow=3,scales="free") + ylab("Bill Length(mm)")
 ggsave(paste(droppath,"Shared Ben and Catherine\\DimDivRevision\\Results\\CompareMetrics\\BillLength.jpeg",sep=""),height=12,width=20,dpi=300,units="in")   
 
+<<<<<<< HEAD
 #############################################
 #Multiple Regression Coefficients
 ###############################################
@@ -516,3 +527,168 @@ pcor.test(data.df$MNTD,data.df$Phylosor.Phylo,data.df$Sorenson)
 
 
 
+=======
+
+#
+#################################################################
+#Inspect individual points, something is wrong with low low low
+#################################################################
+
+#Plot points
+plot(loc,cex=.1)
+text(loc,labels=loc$CommID,cex=.5)
+
+#review specific comparisons
+insp<-function(a,b){
+  e<-c(a,b)
+  co<-data.df.null[data.df.null$To %in% e & data.df.null$From %in% e,]
+  co.sp<-loc[loc$CommID %in% e,]
+  plot(elev.test)
+  points(co.sp,col="red",pch=16)
+  a<-Getsplist(e[[1]])
+  b<-Getsplist(e[[2]])
+  shared<-sum(a%in%b)
+  
+  richnessA<-length(a)
+  richnessB<-length(b)
+  unsharedA<-sum(!a%in%b)
+  unsharedB<-sum(!b%in%a)
+  
+  print(data.frame(shared,richnessA,richnessB,unsharedA,unsharedB))
+  
+  print(paste(co$Sorenson_Null,co$Phylosor.Phylo_Null,co$MNTD_Null))
+  return(co)
+  
+  }
+
+#WHatkind do fit into low low low
+
+lll<-data.df.null[data.df.null$Sorenson_Null %in% "Low" & data.df.null$Phylosor.Phylo_Null %in% "Low" & data.df.null$MNTD_Null %in% "Low",]
+
+#For an example of a suprising inclusion in lll
+#see  129 223
+
+ob<-insp("251","301")
+
+#what is the mean Null distribution for this comparison
+e<-c("251","301")
+
+Nulls<-Null_dataframe[Null_dataframe$From %in% e & Null_dataframe$To %in% e,]
+
+head(Nulls)
+
+ecdf(Nulls$Phylosor.Phylo) (ob$Phylosor.Phylo)
+
+ggplot(Nulls,aes(x=Phylosor.Phylo)) + geom_histogram() + geom_vline(aes(xintercept=ob$Phylosor.Phylo),col="Red") + theme_bw()
+
+a<-Getsplist("301")
+b<-Getsplist("251")
+
+b[!b %in% a]
+a[!a %in% b]
+
+
+#What is the mean null phyloenetic betadiversiy
+aggN<-aggregate(Null_dataframe$Phylosor.Phylo,list(Null_dataframe$To,Null_dataframe$From),mean,na.rm=TRUE)
+
+colnames(aggN)<-c("To","From","meanNull")
+
+#What is the number of shared species
+aggN$unshared<-apply(aggN,1,function(x){
+  a<-Getsplist(as.character(x[[1]]))
+  b<-Getsplist(as.character(x[[2]]))
+  unshared<-sum(!b%in%a) + sum(!a%in%b)
+})
+
+aggN$totalN<-apply(aggN,1,function(x){
+  a<-Getsplist(as.character(x[[1]]))
+  b<-Getsplist(as.character(x[[2]]))
+  return(length(a)+length(b))
+})
+
+#plot ratio
+ggplot(aggN,aes(x=unshared/totalN,y=meanNull)) + geom_point() + geom_smooth(method="lm")
+
+# WHen species list are more similiar it is harder to get low phylogenetic diversity
+
+ggplot(data.df.null,aes(y=Sorenson,x=Phylosor.Phylo_Null)) + geom_boxplot()
+
+#Simulation test
+
+doN<-function(richness_To,richness_From,overlapping){
+  
+  #Create slots for each community
+  nullTo<-matrix(nrow=richness_To,ncol=1)
+  nullFrom<-matrix(nrow=richness_From,ncol=1)
+  
+  overlap.species<-NULL
+  #If there are species overlaps
+  if (overlapping > 0){
+    #Fill slots in both assemblages with the same randomly drawn species
+    overlap.species<-sample(splist,overlapping,replace=FALSE)
+    nullTo[1:overlapping,]<-overlap.species
+    nullFrom[1:overlapping,]<-overlap.species
+  }
+  
+  #Fill the rest of the assemblage with randomly drawn species
+  #If communities are entirely nested, there is no more species draw.
+  #Take out the species in overlap species, cant be picked twice
+  if(!overlapping==richness_To){
+    nullTo[(overlapping+1):richness_To,]<-sample(splist[!splist %in% overlap.species],richness_To-overlapping,replace=FALSE)}
+  
+  
+  speciestopick<-splist[!splist %in% overlap.species & !splist %in% nullTo]
+  
+  if(!overlapping==richness_From){
+    nullFrom[(overlapping+1):richness_From,]<-sample(speciestopick,richness_From-overlapping,replace=FALSE)}
+  
+  #Create siteXspp table for new assemblages
+  null_a<-melt(list(nullTo,nullFrom))
+  
+  #create binary matrix
+  null_siteXspp<-(!is.na(cast(null_a,L1~value)[,-1]))*1
+  print(vegdist(null_siteXspp,binary=TRUE))
+  Full=1-as.numeric(phylosor(null_siteXspp,tree))
+  return(Full)}
+
+
+T_20204<-replicate(500,doN(richness_To=20,richness_From=20,overlapping=4))
+
+T_551<-replicate(500,doN(richness_To=5,richness_From=5,overlapping=1))
+
+p<-ggplot() + geom_density(aes(T_551),col="Red") + geom_density(aes(T_20204),col="blue",add=TRUE,alpha=.8) + xlab("PhyloBeta") + theme_bw()
+p<-p + geom_vline(aes(xintercept=quantile(T_20204,.95)),col="Blue",linetype="dashed")
+p<-p+ geom_vline(aes(xintercept=quantile(T_551,.95)),col="Red",linetype="dashed")
+p<-p + geom_vline(aes(xintercept=quantile(T_20204,.05)),col="Blue",linetype="dashed")
+p<-p+ geom_vline(aes(xintercept=quantile(T_551,.05)),col="Red",linetype="dashed")
+p + ggtitle("Sorenson=.8,Red<-n=5 shared = 1,Blue<-n=20,shared=4")
+ggsave(paste(droppath,"Shared Ben and Catherine\\DimDivRevision\\Results\\TaxNullTest.svg",sep=""),height=9,width=8,dpi=300)
+
+quantile(T_20204,.95)
+quantile(T_551,.95)
+
+#Compute phylogenetic and trait metrics on null assemblages
+
+#give a brief biogeographic viewpoint
+data.df.null$meanE<-apply(data.df.null,1,function(x){
+  a<-Envtable[Envtable$CommID %in% as.numeric(x["To"]),"Elev"]
+  b<-Envtable[Envtable$CommID %in% as.numeric(x["From"]),"Elev"]
+  return(mean(a,b))
+})
+
+ggplot(data.df.null,aes(y=meanE,x=Phylosor.Phylo_Null)) + geom_boxplot()
+
+ggplot(data.df.null,aes(y=meanE,x=Sorenson)) + geom_point() + geom_smooth()
+
+aggN$meanE<-apply(aggN,1,function(x){
+  a<-Envtable[Envtable$CommID %in% as.numeric(x["To"]),"Elev"]
+  b<-Envtable[Envtable$CommID %in% as.numeric(x["From"]),"Elev"]
+  return(mean(a,b))
+})
+
+ggplot(aggN,aes(x=meanE,y=shared)) + geom_point() + geom_smooth(method="lm")
+
+ggplot(data.df.null,aes(x=Phylosor.Phylo_Null,y=Phylosor.Phylo)) + geom_boxplot()
+
+data.df.null[data.df.null$Phylosor.Phylo_Null %in% "High",][which.min(data.df.null[data.df.null$Phylosor.Phylo_Null %in% "High",]$Phylosor.Phylo),]
+>>>>>>> 6bbdc2e926be5a888630ceb6f34364b6c511b5c7

@@ -1,4 +1,3 @@
-
 Taxonomic, Phylogenetic and Functional Diversity in South American Hummingbirds
 ======
 
@@ -19,18 +18,16 @@ Read in assemblage information and extract spatial and environmental information
 
 Code Block: DimDivEnv.R
 
-Step 2
+Step 2 Compute Dimensions of Betadiversity Metrics
 ------------------------------
-Compute Dimensions of Betadiversity Metrics
 
 While this can be done in pieces, it is greatly advised to run on a cluster, since the code will run 47 serially. On 400 cores, the code takes 7 hrs. 
 Thanks to the Xsede supercomputing cluster "Stampede" for their access to allow this size of computation
 
 Code Block: DimDivClusterAll.R
 
-Step 3
+Step 3 Create Figures from the Cluster Output
 --------------------------------
-Take the result from the cluster:
 
 FinalData.csv - Contains all the environmental information, spatial information, and observed betadiversity for all 23871 unique comparisons (219*218/2)
 
@@ -40,7 +37,7 @@ and create the final figures.
 
 Code Block: PostCluster_Figures.R
 
-Step 4
+Step 4 Permutation Tests
 --------------------------------------
 Bootstrapping of Environmental and Spatial variables for each of the eight combinations of betadiversity dimensions and predictors of betadiversity
 
