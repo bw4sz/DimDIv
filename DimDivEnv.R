@@ -30,7 +30,7 @@ require(scales)
 #sink("C:/Users/Jorge/Dropbox/Shared Ben and Catherine/DimDivRevision/Results/OvernightOutput.txt")
 #load data if desired
 
-load("C:/Users/Ben/Dropbox/Shared Ben and Catherine/DimDivRevision/Results/DimDivRevision.RData")
+#load("C:/Users/Ben/Dropbox/Shared Ben and Catherine/DimDivRevision/Results/DimDivRevision.RData")
 
 ###Define Source Functions
 
@@ -52,6 +52,17 @@ Getsplist<-function(commID){
 ##########################################################
 #Read in data
 ##########################################################
+
+
+#Set dropbox path
+droppath<-"C:/Users/Jorge/Dropbox/"
+
+#Set git path
+gitpath<-"C:/Users/Jorge/Documents/DimDiv/"
+
+
+######################################################################################
+
 
 #Load in the data
 #load("C:/Users/Jorge/Dropbox/Shared Ben and Catherine/DimDivEntire/Output Data/Workspace.RData")
@@ -109,11 +120,13 @@ rownames(mon)<-gsub(" ","_",rownames(mon))
 ##############################################################
 comm<-siteXspp
 
-
 #Extract env information from each locality
 #Import Localities
 loc<-readShapePoints("Locs_proj.shp")
 head(loc)
+
+mean(pointDistance(loc,longlat=TRUE)/1000),na.rm=TRUE)
+mean(edist)
 
 #Put all raster layers into one folder, point towards that folder.
 envL<-list.files(pattern=".tif$","D:\\Ben\\GIS\\Data\\DimDiv\\EnvLayers",full.names=T)
