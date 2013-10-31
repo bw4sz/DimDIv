@@ -119,6 +119,8 @@ Plot what we've learned
 =============================
 1.Unstandardized Distances are Biased compared to zscores
 ---------------------------------------------------------------------
+
+
 2.Trait dendrogram is a reasonable approximation for data structure -Its the very 
 -----------------------------------------------------------------------------
 unrelated taxa that are most difficult to force into a structure. 
