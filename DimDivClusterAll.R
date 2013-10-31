@@ -142,9 +142,21 @@ beta_all<-function(comm,tree,traits){
   #There are eight species without traits, take them out for just this portion of the analysis, keep the assemblage lsit
   siteXspp_traits<-comm[,colnames(comm) %in% rownames(mon_cut)]
   
-  
-  prc_traits<-prcomp(mon_cut)
-  newSGdist <- dist(prc_traits$x)
+#Zscores, standardized by sd and subtracted means
+means<-apply(mon_cut,2,mean)
+
+Bill<-mon_cut$Bill - means["Bill"]/sd(mon_cut$Bill)
+Mass<-mon_cut$Mass - means["Mass"]/sd(mon_cut$Mass)
+WingChord<-(mon_cut$WingChord - means["WingChord"])/sd(mon_cut$WingChord)
+
+z.scores<-data.frame(Bill,Mass,WingChord)
+rownames(z.scores)<-rownames(mon_cut)
+
+newSGdist<-dist(z.scores,method="euclidean")
+
+  #If you wanted a PCA 
+  #prc_traits<-prcomp(mon_cut)
+  #newSGdist <- dist(prc_traits$x)
   
 source("/home1/02443/bw4sz/DimDiv/BenHolttraitDiversity.R")
   #source("BenHolttraitDiversity.R")
@@ -187,20 +199,20 @@ source("/home1/02443/bw4sz/DimDiv/BenHolttraitDiversity.R")
   
   return(Allmetrics)}
 
-#system.time(beta_metrics<-beta_all(comm=comm,tree=tree,traits=mon))
+system.time(beta_metrics<-beta_all(comm=comm,tree=tree,traits=mon))
 
 #Visualizations of the beta metrics
-#head(beta_metrics)
+head(beta_metrics)
 
 #Get rid of the nestedness components
-#beta_metrics<-beta_metrics[,colnames(beta_metrics) %in% c("To","From","MNTD","Phylosor.Phylo","Sorenson") ]
+beta_metrics<-beta_metrics[,colnames(beta_metrics) %in% c("To","From","MNTD","Phylosor.Phylo","Sorenson") ]
 
 #####################################################
 #Merge Betadiversity and Environmnetal Dissimilairity
 #####################################################
-#data.merge<-merge(compare.env,beta_metrics,by=c("To","From"))
+data.merge<-merge(compare.env,beta_metrics,by=c("To","From"))
 
-#save.image("/home1/02443/bw4sz/DimDiv/DimDivRevisionCluster.RData")
+save.image("/home1/02443/bw4sz/DimDiv/DimDivRevisionCluster.RData")
 ###
 #End Part 1
 ###
@@ -306,15 +318,23 @@ splist<-colnames(siteXspp)
 #Null model for taxonomic phylogenetic and trait
 ############################
 
-clusterExport(cluster, list("null_taxlists", "splist","sp.list","siteXspp","richness_sites","beta_all","tree","mon"))
-Null_dataframe0<-clusterApply(cluster,1:500,Phylo_TraitN)
+#clusterExport(cluster, list("null_taxlists", "splist","sp.list","siteXspp","richness_sites","beta_all","tree","mon"))
+#Null_dataframe0<-clusterApply(cluster,1:500,Phylo_TraitN)
 
-Null_dataframe0[[1]]
+#If this has failed, read and aggregate from file 
 
-Null_dataframe<-rbind.fill(Null_dataframe0)
+#Null_dataframe0[[1]]
+
+#Null_dataframe<-rbind.fill(Null_dataframe0)
 
 #Keep desired columns, ignoring nestedness components
-Null_dataframe<-Null_dataframe[,colnames(Null_dataframe) %in% c("To","From","MNTD","Phylosor.Phylo","Sorenson","Iteration") ]
+#Null_dataframe<-Null_dataframe[,colnames(Null_dataframe) %in% c("To","From","MNTD","Phylosor.Phylo","Sorenson","Iteration") ]
+
+fil<-list.files("/home1/02443/bw4sz/DimDiv/Iterations",full.names=TRUE)
+
+fil.l<-lapply(fil,read.csv,row.names=1)
+
+Null_dataframe<-rbind.fill(fil.l)
 
 save.image("/home1/02443/bw4sz/DimDiv/DimDivRevisionCluster.RData")
 
