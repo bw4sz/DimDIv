@@ -72,7 +72,7 @@ means <- apply(mon, 2, mean)
 
 Bill <- mon$Bill - means["Bill"]/sd(mon$Bill)
 Mass <- mon$Mass - means["Mass"]/sd(mon$Mass)
-WingChord <- mon$WingChord - means["WingChord"]/sd(mon$WingChord)
+WingChord <- (mon$WingChord - means["WingChord"])/sd(mon$WingChord)
 
 z.scores <- data.frame(Bill, Mass, WingChord)
 rownames(z.scores) <- rownames(mon)
@@ -128,7 +128,7 @@ mantel(d.euclid, d.pca)
 ## 
 ## Upper quantiles of permutations (null model):
 ##    90%    95%  97.5%    99% 
-## 0.0665 0.0980 0.1290 0.1545 
+## 0.0564 0.0915 0.1449 0.1870 
 ## 
 ## Based on 999 permutations
 ```
@@ -144,12 +144,12 @@ mantel(d.pca, d.zscores)
 ## Call:
 ## mantel(xdis = d.pca, ydis = d.zscores) 
 ## 
-## Mantel statistic r:    1 
+## Mantel statistic r: 0.656 
 ##       Significance: 0.001 
 ## 
 ## Upper quantiles of permutations (null model):
 ##    90%    95%  97.5%    99% 
-## 0.0611 0.0976 0.1384 0.1899 
+## 0.0545 0.0849 0.1215 0.2510 
 ## 
 ## Based on 999 permutations
 ```
@@ -169,8 +169,8 @@ mantel(d.euclid, d.pca)
 ##       Significance: 0.001 
 ## 
 ## Upper quantiles of permutations (null model):
-##   90%   95% 97.5%   99% 
-## 0.073 0.115 0.157 0.197 
+##    90%    95%  97.5%    99% 
+## 0.0583 0.0999 0.1436 0.2040 
 ## 
 ## Based on 999 permutations
 ```
@@ -188,12 +188,12 @@ mantel(d.dend, d.dend.ward)
 ## Call:
 ## mantel(xdis = d.dend, ydis = d.dend.ward) 
 ## 
-## Mantel statistic r: 0.629 
+## Mantel statistic r: 0.701 
 ##       Significance: 0.001 
 ## 
 ## Upper quantiles of permutations (null model):
 ##    90%    95%  97.5%    99% 
-## 0.0181 0.0237 0.0323 0.0363 
+## 0.0375 0.0502 0.0634 0.0730 
 ## 
 ## Based on 999 permutations
 ```
@@ -211,12 +211,12 @@ mantel(d.dend, d.euclid)
 ## Call:
 ## mantel(xdis = d.dend, ydis = d.euclid) 
 ## 
-## Mantel statistic r: 0.733 
+## Mantel statistic r: 0.48 
 ##       Significance: 0.001 
 ## 
 ## Upper quantiles of permutations (null model):
 ##    90%    95%  97.5%    99% 
-## 0.0393 0.0867 0.1220 0.1488 
+## 0.0542 0.0729 0.0954 0.1499 
 ## 
 ## Based on 999 permutations
 ```
