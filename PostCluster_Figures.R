@@ -27,25 +27,23 @@ require(scales)
 
 
 #Set dropbox path
-droppath<-"C:/Users/Ben//Dropbox/"
+droppath<-"C:/Users/Jorge//Dropbox/"
 
-#load data from cluster
-
+#load data from cluster and env
+load(paste(droppath,"Shared Ben and Catherine/DimDivRevision/Results/DimDivRevision.RData",sep=""))
 load(paste(droppath,"Shared Ben and Catherine/DimDivRevision/500Iterations/DimDivRevisionCluster.RData",sep=""))
 
-data.df<-read.csv(paste(droppath,"Shared Ben and Catherine/DimDivRevision/500Iterations/FinalData.csv",sep=""))
-
-data.df.null<-read.csv(paste(droppath,"Shared Ben and Catherine/DimDivRevision/500Iterations/FinalDataNull.csv",sep=""))
+#If just working on ouput files, load below
+#data.df<-read.csv(paste(droppath,"Shared Ben and Catherine/DimDivRevision/500Iterations/FinalData.csv",sep=""))
+#data.df.null<-read.csv(paste(droppath,"Shared Ben and Catherine/DimDivRevision/500Iterations/FinalDataNull.csv",sep=""))
 
 
 #There is an anomaly in the null cluster, if the assemblages are identical, there is no quantile of the distribution, so the cumulative distribution is =1, thus making the null high
 data.df.null[data.df.null$Sorenson==0,]
 
+#set to low!
 data.df.null[data.df.null$Sorenson==0,"Phylosor.Phylo_Null"]<-"Low"
 data.df.null[data.df.null$Sorenson==0,"MNTD_Null"]<-"Low"
-
-#set to low!
-
 
 ##########################################################################################
 #Tables and Statistics
@@ -170,7 +168,9 @@ Hyplist.func<-function(Tax,Phylo,Func){
   #create parallel cluster
   
   #run 1000 iterations
-  boot.run<-foreach(x=1:1000,.export="data.df") %do% {
+  cl<-makeCluster(8,"SOCK")
+  registerDoSNOW(cl)
+  boot.run<-foreach(x=1:1000,.export="data.df") %dopar% {
     
     require(reshape)
     require(boot)
@@ -230,7 +230,7 @@ Hyplist.func<-function(Tax,Phylo,Func){
   remove.level<-levels(as.factor(HypBox$L1))[str_detect(levels(as.factor(HypBox$L1)),"Random")]
   HypBox<-HypBox[!HypBox$L1 %in% remove.level,]
   
-  setwd("C:\\Users\\Ben\\Dropbox\\Shared Ben and Catherine\\DimDivRevision\\Results")
+  setwd(paste(droppath,"Shared Ben and Catherine\\DimDivRevision\\Results",sep=""))
   setwd(paste(Tax,Phylo,Func,sep="_"))
   dir.create("3WayBoxplots")
   setwd("3WayBoxplots")
@@ -240,7 +240,7 @@ Hyplist.func<-function(Tax,Phylo,Func){
   ###############################################
   
   head(HypBox)
-  HypBox[HypBox$variable=="CostPathCost" & HypBox$value > 1.5e9,"value"]<-1.5e9
+  HypBox[HypBox$variable=="CostPathCost" & HypBox$value > quantile(data.df$CostPathCost,.95),"value"]<-NA
   
   #Get the medians
   colnames(HypBox)<-c("To","From","Diss","value","Hyp")
@@ -257,7 +257,6 @@ Hyplist.func<-function(Tax,Phylo,Func){
   p + theme(axis.text.x = element_text(angle = 90, hjust = 1))
   ggsave("Env3Boxplots.svg",dpi=300,height=8,width=12)
   ggsave("Env3Boxplots.jpeg",dpi=300,height=8,width=12)
-  
   
   
   #Draw Lines between all hypothesis one sites
@@ -340,7 +339,8 @@ Hyplist.func<-function(Tax,Phylo,Func){
   #create parallel cluster
   
   #run 1000 iterations
-  boot.run<-foreach(x=1:1000,.export="data.df") %do% {
+  
+  boot.run<-foreach(x=1:1000,.export="data.df") %dopar% {
     
     require(reshape)
     require(boot)
@@ -408,7 +408,7 @@ Hyplist.func<-function(Tax,Phylo,Func){
   
   head(HypBox)
   
-  HypBox[HypBox$variable=="CostPathCost","value"]<-log(HypBox[HypBox$variable=="CostPathCost","value"])
+  
   colnames(HypBox)<-c("To","From","Diss","value","Hyp")
   
   #split the dimension and the direction out 
@@ -416,11 +416,16 @@ Hyplist.func<-function(Tax,Phylo,Func){
   
   #Get the true medians across the entire dataset
   intercepts<-data.frame(Diss=levels(HypBox$Diss),value=round(apply(data.df[,levels(HypBox$Diss)],2,median,na.rm=TRUE),2))
-  #turn costpath intercepts to log
-  intercepts[intercepts$Diss=="CostPathCost","value"]<-log(intercepts[intercepts$Diss=="CostPathCost","value"])
   
+  #remove cost path outliers greater than 95th quartile.
+  HypBox[HypBox$Diss=="CostPathCost" & HypBox$value > quantile(data.df$CostPathCost,.95),"value"]<-NA
+
   p<-ggplot(HypBox,aes(x=Direction,y=value,fill=Dimension)) + geom_boxplot()+ facet_wrap(~Diss,scales="free",drop=FALSE) + theme(axis.text.x = element_text(angle = 90, hjust = 1)) + geom_hline(data=intercepts,aes(yintercept=value,group=Diss), linetype="dashed",col='grey40') + theme_bw() + scale_x_discrete(drop=FALSE)
   p + theme(axis.text.x = element_text(angle = 90, hjust = 1)) + scale_fill_brewer(palette="Greys")
+  
+  #remove outliers greater than the 95th quartile
+  
+  
   ggsave("Env1Boxplots.svg",dpi=300,height=8,width=12)
   ggsave("Env1Boxplots.jpeg",dpi=300,height=8,width=12)
   
@@ -496,7 +501,6 @@ m.sp<-aggregate(morph$ExpC,list(morph$SpID),function(x){
 
 mean(m.sp$x,na.rm=TRUE)
 
-
 #Start with bill length
 ggplot(data=morph,aes(SpID,ExpC)) + theme_bw() + geom_boxplot() + theme(axis.text.x = element_text(angle = 90, hjust = 1)) + facet_wrap(~Clade,nrow=3,scales="free_x") + ylab("Bill Length(mm)")
 
@@ -504,8 +508,6 @@ anova(morph$SpID,morph$ExpC)
 
 ggsave(paste(droppath,"Shared Ben and Catherine\\DimDivRevision\\Results\\CompareMetrics\\BillLength.jpeg",sep=""),height=12,width=20,dpi=300,units="in")   
       
-
-
 #Eliminate any rounding errors for the weight, a couple bad sites from Aves Data Base
 #The heaviest hummingbird in the world is around 22g, eliminate anything larger, clearly some data cleaning issue
 
@@ -514,8 +516,13 @@ morph<-morph[morph$Peso < 24 & !is.na(morph$Peso),]
 ggplot(data=morph,aes(SpID,Peso)) + theme_bw() + geom_boxplot() + theme(axis.text.x = element_text(angle = 90, hjust = 1)) + facet_wrap(~Clade,nrow=3,scales="free") + ylab("Bill Length(mm)")
 ggsave(paste(droppath,"Shared Ben and Catherine\\DimDivRevision\\Results\\CompareMetrics\\BillLength.jpeg",sep=""),height=12,width=20,dpi=300,units="in")   
 
+#############################################
+#Partial Correlation
+###############################################
 
-#
+require(ppcor)
+pcor.test(data.df$MNTD,data.df$Phylosor.Phylo,data.df$Sorenson)
+
 #################################################################
 #Inspect individual points, something is wrong with low low low
 #################################################################
@@ -554,10 +561,10 @@ lll<-data.df.null[data.df.null$Sorenson_Null %in% "Low" & data.df.null$Phylosor.
 #For an example of a suprising inclusion in lll
 #see  129 223
 
-ob<-insp("251","301")
+ob<-insp("44","376")
 
 #what is the mean Null distribution for this comparison
-e<-c("251","301")
+e<-c("44","376")
 
 Nulls<-Null_dataframe[Null_dataframe$From %in% e & Null_dataframe$To %in% e,]
 
@@ -567,16 +574,15 @@ ecdf(Nulls$Phylosor.Phylo) (ob$Phylosor.Phylo)
 
 ggplot(Nulls,aes(x=Phylosor.Phylo)) + geom_histogram() + geom_vline(aes(xintercept=ob$Phylosor.Phylo),col="Red") + theme_bw()
 
-a<-Getsplist("301")
-b<-Getsplist("251")
+a<-Getsplist("44")
+
+b<-Getsplist("376")
 
 b[!b %in% a]
 a[!a %in% b]
 
-
 #What is the mean null phyloenetic betadiversiy
 aggN<-aggregate(Null_dataframe$Phylosor.Phylo,list(Null_dataframe$To,Null_dataframe$From),mean,na.rm=TRUE)
-
 colnames(aggN)<-c("To","From","meanNull")
 
 #What is the number of shared species
@@ -596,11 +602,9 @@ aggN$totalN<-apply(aggN,1,function(x){
 ggplot(aggN,aes(x=unshared/totalN,y=meanNull)) + geom_point() + geom_smooth(method="lm")
 
 # WHen species list are more similiar it is harder to get low phylogenetic diversity
-
 ggplot(data.df.null,aes(y=Sorenson,x=Phylosor.Phylo_Null)) + geom_boxplot()
 
 #Simulation test
-
 doN<-function(richness_To,richness_From,overlapping){
   
   #Create slots for each community
@@ -650,8 +654,6 @@ p<-p+ geom_vline(aes(xintercept=quantile(T_551,.05)),col="Red",linetype="dashed"
 p + ggtitle("Sorenson=.8,Red<-n=5 shared = 1,Blue<-n=20,shared=4")
 ggsave(paste(droppath,"Shared Ben and Catherine\\DimDivRevision\\Results\\TaxNullTest.svg",sep=""),height=9,width=8,dpi=300)
 
-quantile(T_20204,.95)
-quantile(T_551,.95)
 
 #Compute phylogenetic and trait metrics on null assemblages
 
@@ -674,6 +676,7 @@ aggN$meanE<-apply(aggN,1,function(x){
 
 ggplot(aggN,aes(x=meanE,y=shared)) + geom_point() + geom_smooth(method="lm")
 
+#Which are the "problem" assemblages. 
 ggplot(data.df.null,aes(x=Phylosor.Phylo_Null,y=Phylosor.Phylo)) + geom_boxplot()
 
 data.df.null[data.df.null$Phylosor.Phylo_Null %in% "High",][which.min(data.df.null[data.df.null$Phylosor.Phylo_Null %in% "High",]$Phylosor.Phylo),]

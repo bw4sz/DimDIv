@@ -409,7 +409,7 @@ colnames(m.trait)<-c("To","From","dist","Metric")
 
 trait.compare<-dcast(m.trait,...~Metric,value.var="dist")
 
-svg("Trait.comparison",height=9,width=8)
-ggpairs(trait.compare[complete.cases(trait.compare),-c(1,2)])
+svg("Trait.comparison.svg",height=9,width=8)
+ggplot(data=trait.compare[complete.cases(trait.compare),-c(1,2,4)],aes(x=dendrogram,y=MNTD)) + geom_point() + theme_bw()
 dev.off()
 
