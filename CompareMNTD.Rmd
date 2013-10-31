@@ -1,0 +1,122 @@
+Comparison of Trait Metrics - Z.scores versus unstandardized
+========================================================
+
+Three morphological traits for 141 hummingbird species - Bill Size (mm), Mass (g), WingChord(mm)
+
+Import Data
+-----------
+```{r,message=FALSE,warning=FALSE}
+require(vegan)
+#bring in traits
+morph <- read.csv("C:\\Users\\Jorge\\Dropbox\\Lab paper 1 Predicted vs observed assemblages\\MorphologyShort.csv",na.strings="9999")
+
+#just get males
+morph.male<-morph[morph$Sex=="Macho",c("SpID","ExpC","Peso","AlCdo")]
+morph.complete<-morph.male[complete.cases(morph.male),]
+
+#aggregate for species
+agg.morph<-aggregate(morph.complete,list(morph.complete$SpID),mean)
+mon<-agg.morph[,-2]
+colnames(mon)<-c("Species","Bill","Mass","WingChord")
+rownames(mon)<-mon[,1]
+mon<-mon[,-1]
+
+#Replace spaces with underscore
+rownames(mon)<-gsub(" ","_",rownames(mon))
+head(mon)
+```
+
+Euclidean Distance 
+------------------
+
+```{r,message=FALSE}
+d.euclid<-dist(mon,method="euclidean")
+```
+
+PCA Distance
+-------------------------
+*trivial in this case since i'll use all loading axis, but 
+useful for more traits
+```{r,message=FALSE}
+#pca
+pca.t<-prcomp(mon)
+
+#dist of the loading axis
+d.pca<-dist(pca.t$x,method="euclidean")
+```
+
+Standardized Euclidean Z score
+-------------------------------
+
+```{r,message=FALSE}
+#subtract the means off each column and divide by sd 
+means<-apply(mon,2,mean)
+
+Bill<-mon$Bill - means["Bill"]/sd(mon$Bill)
+Mass<-mon$Mass - means["Mass"]/sd(mon$Mass)
+WingChord<-mon$WingChord - means["WingChord"]/sd(mon$WingChord)
+
+z.scores<-data.frame(Bill,Mass,WingChord)
+rownames(z.scores)<-rownames(mon)
+
+d.zscores<-dist(z.scores,method="euclidean")
+```
+
+Trait Dendrogram - Complete Linkage
+---------------------------------------------
+
+```{r}
+require(ape)
+trait.d<-as.phylo(hclust(d.zscores,method="complete"))
+trait.ward<-as.phylo(hclust(d.zscores,method="ward"))
+
+d.dend<-cophenetic(trait.d)
+d.dend.ward<-cophenetic(trait.ward)
+
+```
+
+
+
+Compare methods
+---------
+
+```{r,message=FALSE,warning=FALSE}
+require(GGally)
+require(ggplot2)
+
+#First three methods are the same?
+mantel(d.euclid,d.pca)
+mantel(d.pca,d.zscores)
+mantel(d.euclid,d.pca)
+
+#Trait dendrogram methods compared to each other
+mantel(d.dend,d.dend.ward)
+
+#Compare Trait dendrogram to euclid
+mantel(d.dend,d.euclid)
+
+
+compa<-list(d.euclid,d.pca,d.zscores,d.dend)
+names(compa)<-c("Euclidean","PCA","Z.scores","Complete.Dendrogram")
+
+#Turn into a sparse matrix
+compmat<-lapply(compa,function(x){
+  j<-as.matrix(x)
+  j[upper.tri(j)]<-NA
+  diag(j)<-NA
+  return(j)
+})
+
+#melt to a dataframe and plot
+dat<-melt(compmat)
+dat.cast<-cast(na.omit(dat),X1+X2~L1)
+
+#Euclid Methods
+ggplot(dat.cast,aes(Euclidean,Z.scores)) + geom_point()
+
+#Euclid v Complete Linkage
+ggplot(dat.cast,aes(Z.scores,Complete.Dendrogram)) + geom_point()
+
+#Its the very unrelated taxa that are most difficult to force into a structure. 
+
+```
