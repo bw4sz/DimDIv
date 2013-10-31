@@ -102,9 +102,7 @@ d.dend.ward <- cophenetic(trait.ward)
 ```
 
 
-
-
-Compare methods
+Compare euclidean dist and zscores
 ---------
 
 
@@ -128,7 +126,7 @@ mantel(d.euclid, d.pca)
 ## 
 ## Upper quantiles of permutations (null model):
 ##    90%    95%  97.5%    99% 
-## 0.0564 0.0915 0.1449 0.1870 
+## 0.0656 0.1070 0.1606 0.2313 
 ## 
 ## Based on 999 permutations
 ```
@@ -149,31 +147,15 @@ mantel(d.pca, d.zscores)
 ## 
 ## Upper quantiles of permutations (null model):
 ##    90%    95%  97.5%    99% 
-## 0.0545 0.0849 0.1215 0.2510 
+## 0.0649 0.0968 0.1595 0.2537 
 ## 
 ## Based on 999 permutations
 ```
 
-```r
-mantel(d.euclid, d.pca)
-```
 
-```
-## 
-## Mantel statistic based on Pearson's product-moment correlation 
-## 
-## Call:
-## mantel(xdis = d.euclid, ydis = d.pca) 
-## 
-## Mantel statistic r:    1 
-##       Significance: 0.001 
-## 
-## Upper quantiles of permutations (null model):
-##    90%    95%  97.5%    99% 
-## 0.0583 0.0999 0.1436 0.2040 
-## 
-## Based on 999 permutations
-```
+Compare dendrogram methods
+---------
+
 
 ```r
 
@@ -193,7 +175,7 @@ mantel(d.dend, d.dend.ward)
 ## 
 ## Upper quantiles of permutations (null model):
 ##    90%    95%  97.5%    99% 
-## 0.0375 0.0502 0.0634 0.0730 
+## 0.0325 0.0457 0.0552 0.0670 
 ## 
 ## Based on 999 permutations
 ```
@@ -216,7 +198,7 @@ mantel(d.dend, d.euclid)
 ## 
 ## Upper quantiles of permutations (null model):
 ##    90%    95%  97.5%    99% 
-## 0.0542 0.0729 0.0954 0.1499 
+## 0.0552 0.0751 0.1135 0.1770 
 ## 
 ## Based on 999 permutations
 ```
@@ -238,12 +220,24 @@ compmat <- lapply(compa, function(x) {
 # melt to a dataframe and plot
 dat <- melt(compmat)
 dat.cast <- cast(na.omit(dat), X1 + X2 ~ L1)
+```
+
+
+Plot what we've learned
+=============================
+1.Unstandardized Distances are Biased compared to zscores
+----------------------------------------------------------
+2.Trait dendrogram is a reasonable approximation for data structure -Its the very 
+unrelated taxa that are most difficult to force into a structure. 
+-------------------------------------------------------------------------
+
+```r
 
 # Euclid Methods
 ggplot(dat.cast, aes(Euclidean, Z.scores)) + geom_point()
 ```
 
-![plot of chunk unnamed-chunk-6](figure/unnamed-chunk-61.png) 
+![plot of chunk unnamed-chunk-8](figure/unnamed-chunk-81.png) 
 
 ```r
 
@@ -251,11 +245,9 @@ ggplot(dat.cast, aes(Euclidean, Z.scores)) + geom_point()
 ggplot(dat.cast, aes(Z.scores, Complete.Dendrogram)) + geom_point()
 ```
 
-![plot of chunk unnamed-chunk-6](figure/unnamed-chunk-62.png) 
+![plot of chunk unnamed-chunk-8](figure/unnamed-chunk-82.png) 
 
 ```r
 
-# Its the very unrelated taxa that are most difficult to force into a
-# structure.
 ```
 

@@ -75,9 +75,7 @@ d.dend.ward<-cophenetic(trait.ward)
 
 ```
 
-
-
-Compare methods
+Compare euclidean dist and zscores
 ---------
 
 ```{r,message=FALSE,warning=FALSE}
@@ -87,7 +85,12 @@ require(ggplot2)
 #First three methods are the same?
 mantel(d.euclid,d.pca)
 mantel(d.pca,d.zscores)
-mantel(d.euclid,d.pca)
+```
+
+Compare dendrogram methods
+---------
+
+```{r}
 
 #Trait dendrogram methods compared to each other
 mantel(d.dend,d.dend.ward)
@@ -110,6 +113,17 @@ compmat<-lapply(compa,function(x){
 #melt to a dataframe and plot
 dat<-melt(compmat)
 dat.cast<-cast(na.omit(dat),X1+X2~L1)
+````
+
+Plot what we've learned
+=============================
+1.Unstandardized Distances are Biased compared to zscores
+----------------------------------------------------------
+2.Trait dendrogram is a reasonable approximation for data structure -Its the very 
+-------------------------------------------------------------
+unrelated taxa that are most difficult to force into a structure. 
+-------------------------------------------------------------------------
+```{r}
 
 #Euclid Methods
 ggplot(dat.cast,aes(Euclidean,Z.scores)) + geom_point()
@@ -117,6 +131,5 @@ ggplot(dat.cast,aes(Euclidean,Z.scores)) + geom_point()
 #Euclid v Complete Linkage
 ggplot(dat.cast,aes(Z.scores,Complete.Dendrogram)) + geom_point()
 
-#Its the very unrelated taxa that are most difficult to force into a structure. 
 
 ```
