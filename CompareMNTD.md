@@ -225,7 +225,7 @@ dat.cast <- cast(na.omit(dat), X1 + X2 ~ L1)
 
 Plot what we've learned
 =============================
-1.Unstandardized Distances are Biased compared to zscores
+1.Unstandardized Distances are biased compared to zscores
 ---------------------------------------------------------------------
 
 
