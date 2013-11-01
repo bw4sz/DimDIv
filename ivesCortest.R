@@ -1,16 +1,43 @@
 #Ives 2010 correlation for Randomization and PCD method
 #in #### are notes directly from ives
 
-setwd("C:\\Users\\Jorge\\Dropbox\\Shared Ben and Catherine\\DimDivRevision\\Results")
+#Post Cluster Figure Creation
+#DimDivScript
 
-#Written by Ben Weinstein Stony Brook University
+#Taxonomic, Phylogenetic and Functional Diversity in South American Hummingbirds
+#Manuscript submitted to the American Naturalist
 
-#Read in data
+#Ben Gregory Weinstein, corresponding author - alll code below was writen by BGW
+#Boris A. Tinoco, Juan L. Parra, PhD, Leone M. Brown, PhD, Gary Stiles, PhD, Jim A. McGuire, PhD, Catherine H. Graham, PhD
 
-data.df<-read.csv("FinalData.csv")[,-1]
+######################Below are all the packages needed for this work, if any of them flag an error, just say install.package( "name of package")
+require(vegan)
+require(Matrix)
+require(reshape)
+require(maptools)
+require(raster)
+require(rgdal)
+require(ape)
+require(picante)
+require(ggplot2)
+require(gdistance)
+library(doSNOW)
+library(foreach)
+require(fields)
+require(GGally)
+require(stringr)
+require(scales)
+require(boot)
+
+
+#Set dropbox path
+droppath<-"C:/Users/Jorge//Dropbox/"
+
+
+load(paste(droppath,"Shared Ben and Catherine/DimDivRevision/500Iterations/DimDivRevisionCluster.RData",sep=""))
 
 #Just get the columns we want to run in the metrics
-data.d<-data.df[,colnames(data.df) %in% c("beta_functional","Phylosor.Phylo","Phylosor.Func","Sorenson","PCDp.phylo","PCDp.func")]
+data.d<-data.df[,colnames(data.df) %in% c("Sorenson","Phylosor.Phylo","MNTD")]
 
 #Get the colums we want to run in env
 #Set 1: Get the correlations from the dataset 
@@ -19,7 +46,7 @@ true_cor<-sapply(colnames(data.d), function(x){ sapply(colnames(data.env),functi
   cor(data.d[,x],data.env[,y],method="spearman",use="complete.obs")
 })})
 
-write.csv(true_cor,"Env_Cor.csv")
+write.csv(true_cor,paste(droppath,"Shared Ben and Catherine/DimDivRevision/Results/Env_Cor.csv",sep=""))
 
 metric_cor<-sapply(colnames(data.d), function(x){ sapply(colnames(data.d),function(y){
   cor(data.d[,x],data.df[,y],method="spearman",use="complete.obs")

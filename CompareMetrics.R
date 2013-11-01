@@ -26,26 +26,25 @@ require(scales)
 ###############Read in data
 ###########################
 
-#sink output for overnight runs so we can see it tomorrow
-sink("C:/Users/Ben/Dropbox/Shared Ben and Catherine/DimDivRevision/Results/OvernightOutput.txt")
+##########################################################
+#Read in data
+##########################################################
+
+
+#Set dropbox path
+droppath<-"C:/Users/Jorge/Dropbox/"
+
+#Set git path
+gitpath<-"C:/Users/Jorge/Documents/DimDiv/"
+
+
 #load data if desired
-load("C:/Users/Ben/Dropbox/Shared Ben and Catherine/DimDivRevision/Results/DimDivRevision.RData")
+#load("C:/Users/Ben/Dropbox/Shared Ben and Catherine/DimDivRevision/Results/DimDivRevision.RData")
 
 ###Define Source Functions
 
-source("C:/Users/Ben/Dropbox/Scripts/DimDiv/Scripts/geb12021-sup-0004-si.R.txt")
+source(paste(gitpath,"geb12021-sup-0004-si.R.txt",sep=""))
 #Function is called beta tf
-
-lappend <- function(lst, obj) {
-  lst[[length(lst)+1]] <- obj
-  return(lst)
-}
-
-#define a helpful function get species list commid MUST be in quotes!
-
-Getsplist<-function(commID){
-  names(siteXspp[commID,which(siteXspp[commID,]==1)])
-}
 
 ##########################################################
 #Read in data
@@ -54,33 +53,24 @@ Getsplist<-function(commID){
 #Load in the data
 #load("C:/Users/Ben/Dropbox/Shared Ben and Catherine/DimDivEntire/Output Data/Workspace.RData")
 
-##set correct working directory to the dropbox Files for Analysis folder, whereever it is
-setwd("C:\\Users\\Ben\\Dropbox\\Shared Ben and Catherine\\DimDivEntire\\Files for Analysis")  ###Change this to the Files for Analysis folder in your dropbox, no need to move it. 
-
 #Read in species matrix
-siteXspp <- read.csv("siteXspp_Oct20_2011.csv", row.names=1)
+siteXspp <- read.csv(paste(gitpath,"InputData/siteXspp_Oct20_2011.csv", sep=""), row.names=1)
 
 #Get entire species list
 splist<-colnames(siteXspp)
 
 #Read in phylogeny
-tree<-read.nexus("ColombiaPhylogenyUM.tre")
+tree<-read.nexus(paste(gitpath,"InputData/ColombiaPhylogenyUM.tre",sep=""))
 
 #Read in names file to replace names in Nexis file
-spnames<-read.table(file="SpNameTree.txt" , sep = "\t", header = TRUE)
+spnames<-read.table(file=paste(gitpath,"InputData/SpNameTree.txt",sep="") , sep = "\t", header = TRUE)
 
 #Replace tip.label with Spnames#
 tree$tip.label<-as.character(spnames$SpName) 
 
-#Run PCD and split out into functional compenents, 
-tree.func<-read.tree("func.tre")
-
-#Color the func phylo by clade # this only works the 2nd time through
-#col.clade<-as.vector(sapply(tree.func$tip.label,function(x) clades[clades$Dash==x,"Clade"]))
-#plot.phylo(tree.func, cex=.8, tip.color=as.numeric(as.factor(col.clade)))
 
 #bring in traits
-morph <- read.csv("C:\\Users\\Ben\\Dropbox\\Lab paper 1 Predicted vs observed assemblages\\MorphologyShort.csv",na.strings="9999")
+morph <- read.csv(paste(gitpath,"InputData/MorphologyShort.csv",sep=""),na.strings="9999")
 
 #just get males
 morph.male<-morph[morph$Sex=="Macho",c("SpID","ExpC","Peso","AlCdo")]
@@ -96,6 +86,28 @@ mon<-mon[,-1]
 #Replace spaces with underscore
 rownames(mon)<-gsub(" ","_",rownames(mon))
 
+#Zscores, standardized by sd and subtracted means
+means<-apply(mon,2,mean)
+
+Bill<-mon$Bill - means["Bill"]/sd(mon$Bill)
+Mass<-mon$Mass - means["Mass"]/sd(mon$Mass)
+WingChord<-(mon$WingChord - means["WingChord"])/sd(mon$WingChord)
+
+z.scores<-data.frame(Bill,Mass,WingChord)
+rownames(z.scores)<-rownames(mon)
+
+#Functional dendrogram
+tree.func<-as.phylo(hclust(dist(z.scores)))
+
+clades<-read.csv(paste(droppath,"Shared Ben and Catherine\\DimDivEntire\\Files for Analysis\\Cladelist.txt",sep=""),header=FALSE)
+head(clades)
+colnames(clades)<-c("row","Clade","Genus","Species","double","Engish")
+
+head(clades)
+clades$Dash<-gsub(" ","_",clades$double)
+#Color the func phylo by clade # this only works the 2nd time through
+col.clade<-as.vector(sapply(tree.func$tip.label,function(x) clades[clades$Dash==x,"Clade"]))
+plot.phylo(tree.func, cex=.35, tip.color=as.numeric(as.factor(col.clade)))
 
 ##################################
 #Define Function to Compare Metrics
@@ -161,6 +173,9 @@ Phylo_Tax2<-merge(phylometrics,funcmetrics,c("To","From"))
 #################
 Phylo_Tax<-merge(Phylo_Tax2,sorenson,c("To","From"))
 
+Phylo_Tax3<-dcast(Phylo_Tax,...~PCD.phylo,value.var="PCD.value.phylo")
+Phylo_Tax4<-dcast(Phylo_Tax3,...~PCD.func,value.var="PCD.value.func")
+
 #############################################
 #Non-dendrogram approach, functional approach employed by villeger 2013
 #############################################
@@ -179,7 +194,7 @@ pair.w<-combn(rownames(siteXspp_traits),2,simplify=FALSE)
 cl<-makeCluster(cores,"SOCK")
 registerDoSNOW(cl)
 system.time(pairwise.beta<-foreach(x=pair.w,.packages=c("vegan","reshape"),.errorhandling="pass") %dopar%{
-  source("C:/Users/Ben/Dropbox/Scripts/DimDiv/Scripts/geb12021-sup-0004-si.R.txt")
+  source(paste(gitpath,"geb12021-sup-0004-si.R.txt",sep=""))
   Villeger<-beta_TF(siteXspp_traits[rownames(siteXspp_traits) %in% x,] ,as.matrix(mon_cut))$beta
   Villeger<-melt(Villeger)
   cast(Villeger,~X1+X2)
@@ -210,19 +225,18 @@ Allmetrics<-merge(func.beta,Phylo_Tax,by=c("To","From"))
 ## sp.list is a list with the names of the species found in each grid cell
 # the name of each entry in sp.list is the name of the grid cell it refers to
 
-prc_traits<-prcomp(mon_cut)
-newSGdist <- dist(prc_traits$x)
-source("C:/Users/Ben/Documents/DimDiv/DimDiv/BenHolttraitDiversity.R")
+
+source(paste(gitpath,"BenHolttraitDiversity.R",sep=""))
 
 #create sp.list
 sp.list<-apply(siteXspp_traits,1,function(x){
   names(x[which(x==1)])
 })
 
-dists <- as.matrix(newSGdist)
+dists<-as.matrix(dist(traits,method="euclidean"))
 
-rownames(dists) <- rownames(mon_cut)
-colnames(dists) <- rownames(mon_cut)
+rownames(dists) <- rownames(traits)
+colnames(dists) <- rownames(traits)
 
 sgtraitMNTD <- sapply(rownames(siteXspp_traits),function(i){
   
@@ -246,10 +260,7 @@ colnames(melt.MNTD)<-c("MNTD","To","From")
 #Combine with other metrics
 Allmetrics0<-merge(Allmetrics,melt.MNTD,by=c("To","From"))
 
-
 #Cast out the full frame
-require(reshape2)
-
 Allmetrics1<-dcast(Allmetrics0,...~PCD.phylo,value.var="PCD.value.phylo")
 colnames(Allmetrics1)[15:17]<-c("PCD.phylo","PCDc.phylo","PCDp.phylo")
 
@@ -258,12 +269,12 @@ colnames(Allmetrics2)[16:18]<-c("PCD.func","PCDc.func","PCDp.func")
 
 return(Allmetrics2)}
 
-system.time(beta_metrics<-beta_all(comm=comm,tree=tree,traits=mon,cores=3))
+system.time(beta_metrics<-beta_all(comm=comm,tree=tree,traits=z.scores,cores=8))
                             
 #Visualizations of the beta metrics
 head(beta_metrics)
 
-save.image("C:/Users/Ben/Dropbox/Shared Ben and Catherine/DimDivRevision/Results/CompareMetrics.RData")
+save.image(paste(droppath,"Shared Ben and Catherine/DimDivRevision/Results/CompareMetrics.RData",sep=""))
 
 ##########################################################################################
 #Tables and Statistics
@@ -413,3 +424,5 @@ svg("Trait.comparison.svg",height=9,width=8)
 ggplot(data=trait.compare[complete.cases(trait.compare),-c(1,2,4)],aes(x=dendrogram,y=MNTD)) + geom_point() + theme_bw()
 dev.off()
 
+col.clade<-as.vector(sapply(tree.func$tip.label,function(x) clades[clades$Dash==x,"Clade"]))
+plot.phylo(tree.func, cex=.8, tip.color=as.numeric(as.factor(col.clade)))
