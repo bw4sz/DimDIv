@@ -24,13 +24,13 @@ require(fields)
 require(GGally)
 require(stringr)
 require(scales)
-
+require(boot)
 
 #Set dropbox path
 droppath<-"C:/Users/Jorge//Dropbox/"
 
 #load data from cluster and env
-load(paste(droppath,"Shared Ben and Catherine/DimDivRevision/Results/DimDivRevision.RData",sep=""))
+#load(paste(droppath,"Shared Ben and Catherine/DimDivRevision/Results/DimDivRevision.RData",sep=""))
 load(paste(droppath,"Shared Ben and Catherine/DimDivRevision/500Iterations/DimDivRevisionCluster.RData",sep=""))
 
 #If just working on ouput files, load below
@@ -149,6 +149,7 @@ Hyplist.func<-function(Tax,Phylo,Func){
   #Proportion of combinations for each null model, later make a recursive object that grabs this output for plotting
   prop.Hyp<-melt(sapply(Hyplist,nrow)/nrow(data.df)*100)
   prop.Hyp$Hyp<-as.character(rownames( prop.Hyp))
+  prop.Hyp$Combs<-prop.Hyp$value*nrow(data.df.null)/100
   write.csv(prop.Hyp,"ProportionHypotheses.csv")
   
   ###########################As i see it we need two randomization test, to say the difference in elevation is "high" we should compare that to the dataset as a whole.
@@ -432,36 +433,8 @@ Hyplist.func<-function(Tax,Phylo,Func){
   #Draw Lines between all hypothesis one sites
   elevr<-raster(paste(droppath,"Shared Ben and Catherine\\DimDivEntire\\Files for Analysis\\studyarea_1km.tif",sep=""))
   
-  #Plot spatial combinations for each High low of tax, phylo, trait.
-  for(y in 1:length(one_way)){
-    one<-one_way[[y]]
-    for (x in 1:length(one)){
-      Hyplist<-one[[x]]
-      coords<-apply(Hyplist,1,function(x){
-        x_stat<-Envtable[Envtable$CommID %in% as.numeric(x["To"]),c("LatDecDeg","LongDecDeg")]
-        y_stat<-Envtable[Envtable$CommID %in% as.numeric(x["From"]),c("LatDecDeg","LongDecDeg")]
-        comb<-cbind(x_stat,y_stat)
-        colnames(comb)<-c("xmin","xmax","ymin","ymax")
-        return(comb)
-      })
-      cordmatrix<-rbind.fill(coords)
-      
-      #Plot map and create arrows between assemblages
-      jpeg(paste(paste(names(one_way)[y],names(one)[x]),".jpeg",sep=""),height= 10, width = 10, unit="in", res=300)
-      plot(elevr, axes=FALSE,main=paste(names(one_way)[y],names(one)[x]),legend=F,col=colorRampPalette(c("grey90", "grey6"))(255))
-      points(loc, col='red', pch=10,cex=.5)
-      for (x in 1:nrow(cordmatrix)) {
-        arrows(y0=cordmatrix[x,1],x0=cordmatrix[x,2],y1=cordmatrix[x,3],x1=cordmatrix[x,4],length=0, lwd=1)
-      }
-      dev.off()
-    }
-  }
-  
-  #Read the env analysis for just the univariate results
-  
-  
-  
-  ###Done
+ 
+###Done
   #save data from that run
   setwd(paste(droppath,"Shared Ben and Catherine\\DimDivRevision\\Results",sep=""))
   setwd(paste(Tax,Phylo,Func,sep="_"))
