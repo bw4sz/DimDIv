@@ -4,7 +4,7 @@
 #Ben Gregory Weinstein, corresponding author - alll code below was writen by BGW
 #Boris A. Tinoco, Juan L. Parra, PhD, Leone M. Brown, PhD, Gary Stiles, PhD, Jim A. McGuire, PhD, Catherine H. Graham, PhD
 
-require(Rmpi)
+#require(Rmpi)
 require(doSNOW)
 require(vegan)
 require(reshape)
