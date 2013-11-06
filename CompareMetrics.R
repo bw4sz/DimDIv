@@ -423,6 +423,3 @@ trait.compare<-dcast(m.trait,...~Metric,value.var="dist")
 svg("Trait.comparison.svg",height=9,width=8)
 ggplot(data=trait.compare[complete.cases(trait.compare),-c(1,2,4)],aes(x=dendrogram,y=MNTD)) + geom_point() + theme_bw()
 dev.off()
-
-col.clade<-as.vector(sapply(tree.func$tip.label,function(x) clades[clades$Dash==x,"Clade"]))
-plot.phylo(tree.func, cex=.8, tip.color=as.numeric(as.factor(col.clade)))

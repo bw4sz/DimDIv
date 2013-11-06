@@ -30,8 +30,8 @@ require(boot)
 droppath<-"C:/Users/Jorge//Dropbox/"
 
 #load data from cluster and env
-#load(paste(droppath,"Shared Ben and Catherine/DimDivRevision/Results/DimDivRevision.RData",sep=""))
-load(paste(droppath,"Shared Ben and Catherine/DimDivRevision/500Iterations/DimDivRevisionCluster.RData",sep=""))
+load(paste(droppath,"Shared Ben and Catherine/DimDivRevision/Results/DimDivRevision.RData",sep=""))
+load(paste(droppath,"Shared Ben and Catherine/DimDivRevision/500Iterations/Intervals_.9_.1/DimDivRevisionCluster.RData",sep=""))
 
 #If just working on ouput files, load below
 #data.df<-read.csv(paste(droppath,"Shared Ben and Catherine/DimDivRevision/500Iterations/FinalData.csv",sep=""))
@@ -49,7 +49,7 @@ data.df.null[data.df.null$Sorenson==0,"MNTD_Null"]<-"Low"
 #Tables and Statistics
 #########################################################################################
 
-setwd(paste(droppath,"Shared Ben and Catherine\\DimDivRevision\\Results",sep=""))
+setwd(paste(droppath,"Shared Ben and Catherine\\DimDivRevision\\Results_9",sep=""))
 
 #Get the bounds of each 
 range_metrics<-list()
@@ -534,10 +534,10 @@ lll<-data.df.null[data.df.null$Sorenson_Null %in% "Low" & data.df.null$Phylosor.
 #For an example of a suprising inclusion in lll
 #see  129 223
 
-ob<-insp("44","376")
+ob<-insp("127","519")
 
 #what is the mean Null distribution for this comparison
-e<-c("44","376")
+e<-c("127","519")
 
 Nulls<-Null_dataframe[Null_dataframe$From %in% e & Null_dataframe$To %in% e,]
 
@@ -555,7 +555,7 @@ b[!b %in% a]
 a[!a %in% b]
 
 #What is the mean null phyloenetic betadiversiy
-aggN<-aggregate(Null_dataframe$Phylosor.Phylo,list(Null_dataframe$To,Null_dataframe$From),mean,na.rm=TRUE)
+aggN<-aggregate(Null_dataframe$Sorenson,list(Null_dataframe$To,Null_dataframe$From),mean,na.rm=TRUE)
 colnames(aggN)<-c("To","From","meanNull")
 
 #What is the number of shared species
@@ -572,10 +572,26 @@ aggN$totalN<-apply(aggN,1,function(x){
 })
 
 #plot ratio
-ggplot(aggN,aes(x=unshared/totalN,y=meanNull)) + geom_point() + geom_smooth(method="lm")
+ggplot(aggN,aes(x=totalN,y=meanNull)) + geom_point() + geom_smooth(method="lm")
 
 # WHen species list are more similiar it is harder to get low phylogenetic diversity
 ggplot(data.df.null,aes(y=Sorenson,x=Phylosor.Phylo_Null)) + geom_boxplot()
+
+#Richness and tax diversity
+aggN<-aggregate(Null_dataframe$Sorenson,list(Null_dataframe$To),mean,na.rm=TRUE)
+aggN$totalN<-apply(aggN,1,function(x){
+  a<-Getsplist(as.character(x[[1]]))
+  return(length(a))
+})
+
+ggplot(aggN,aes(x=totalN,y=x)) + geom_point() + geom_smooth(method="lm")
+
+#means versus medians
+ggplot(data.df,aes(x=Euclid)) + geom_histogram() + geom_vline(aes(xintercept=mean(Euclid)),col="red") + geom_vline(aes(xintercept=median(Euclid)),col="blue")  + theme_bw()
+
+sapply(levels(HypBox$Diss),function(x){
+ecdf(data.df[,x]) (mean(data.df[,x]))
+}
 
 #Simulation test
 doN<-function(richness_To,richness_From,overlapping){
