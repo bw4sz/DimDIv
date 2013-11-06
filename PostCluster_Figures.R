@@ -27,16 +27,22 @@ require(scales)
 require(boot)
 
 #Set dropbox path
-droppath<-"C:/Users/Jorge//Dropbox/"
+droppath<-"C:/Users/Ben//Dropbox/"
 
 #load data from cluster and env
 #load(paste(droppath,"Shared Ben and Catherine/DimDivRevision/Results/DimDivRevision.RData",sep=""))
-load(paste(droppath,"Shared Ben and Catherine/DimDivRevision/500Iterations/DimDivRevisionCluster.RData",sep=""))
+load(paste(droppath,"Shared Ben and Catherine/DimDivRevision/500Iterations/Intervals_.9_.1/DimDivRevisionClusterTaxOnly.RData",sep=""))
 
 #If just working on ouput files, load below
-#data.df<-read.csv(paste(droppath,"Shared Ben and Catherine/DimDivRevision/500Iterations/FinalData.csv",sep=""))
-#data.df.null<-read.csv(paste(droppath,"Shared Ben and Catherine/DimDivRevision/500Iterations/FinalDataNull.csv",sep=""))
+data.df<-read.csv(paste(droppath,"Shared Ben and Catherine/DimDivRevision/500Iterations/Intervals_.9_.1/FinalData.csv",sep=""))
+data.df.null<-read.csv(paste(droppath,"Shared Ben and Catherine/DimDivRevision/500Iterations/Intervals_.9_.1/FinalDataNull.csv",sep=""))
 
+head(data.df.null)
+head(null_taxlists)
+
+data.df.null<-data.df.null[,!colnames(data.df.null) %in% "Sorenson_Null"]
+
+data.df.null<-merge(data.df.null,null_taxlists,by=c("To","From"))
 
 #There is an anomaly in the null cluster, if the assemblages are identical, there is no quantile of the distribution, so the cumulative distribution is =1, thus making the null high
 data.df.null[data.df.null$Sorenson==0,]
@@ -49,7 +55,7 @@ data.df.null[data.df.null$Sorenson==0,"MNTD_Null"]<-"Low"
 #Tables and Statistics
 #########################################################################################
 
-setwd(paste(droppath,"Shared Ben and Catherine\\DimDivRevision\\Results",sep=""))
+setwd(paste(droppath,"Shared Ben and Catherine\\DimDivRevision\\Results_9",sep=""))
 
 #Get the bounds of each 
 range_metrics<-list()
@@ -130,7 +136,7 @@ range_plots<-lapply(12:14,function(x){
 #Create multiple options for the hyplist, hold them in a list and spit them to file seperately
 
 Hyplist.func<-function(Tax,Phylo,Func){
-  setwd(paste(droppath,"Shared Ben and Catherine\\DimDivRevision\\Results",sep=""))
+  setwd(paste(droppath,"Shared Ben and Catherine\\DimDivRevision\\Results_9",sep=""))
   
   #Create directory
   dir.store<-dir.create(paste(Tax,Phylo,Func,sep="_"))
@@ -169,7 +175,7 @@ Hyplist.func<-function(Tax,Phylo,Func){
   #create parallel cluster
   
   #run 1000 iterations
-  cl<-makeCluster(8,"SOCK")
+  cl<-makeCluster(3,"SOCK")
   registerDoSNOW(cl)
   boot.run<-foreach(x=1:1000,.export="data.df") %dopar% {
     
@@ -231,7 +237,7 @@ Hyplist.func<-function(Tax,Phylo,Func){
   remove.level<-levels(as.factor(HypBox$L1))[str_detect(levels(as.factor(HypBox$L1)),"Random")]
   HypBox<-HypBox[!HypBox$L1 %in% remove.level,]
   
-  setwd(paste(droppath,"Shared Ben and Catherine\\DimDivRevision\\Results",sep=""))
+  setwd(paste(droppath,"Shared Ben and Catherine\\DimDivRevision\\Results_9",sep=""))
   setwd(paste(Tax,Phylo,Func,sep="_"))
   dir.create("3WayBoxplots")
   setwd("3WayBoxplots")
@@ -265,7 +271,7 @@ Hyplist.func<-function(Tax,Phylo,Func){
   
   #Function for spatial lines for all hypothesis, overlayed on an Ecuador Map
   
-  setwd(paste(droppath,"Shared Ben and Catherine\\DimDivRevision\\Results",sep=""))
+  setwd(paste(droppath,"Shared Ben and Catherine\\DimDivRevision\\Results_9",sep=""))
   setwd(paste(Tax,Phylo,Func,sep="_"))
   dir.create("Maps")
   setwd("Maps")
@@ -276,7 +282,7 @@ Hyplist.func<-function(Tax,Phylo,Func){
   #plot all combinations
   map_names<-c("Low.Low.Low","High.Low.Low","High.High.Low","Low.High.Low","High.High.High","Low.High.High","Low.Low.High","High.Low.High")
   
-  cl<-makeCluster(7,"SOCK")
+  cl<-makeCluster(3,"SOCK")
   maps.Hyp<-foreach(f=1:length(map_names),.packages=c("reshape","raster","rgdal")) %do% {
     jpeg(paste(map_names[f],".jpeg",sep=""),height= 10, width = 10, unit="in", res=300)
     if(length(Hyplist[[map_names[f]]])>0){
@@ -398,7 +404,7 @@ Hyplist.func<-function(Tax,Phylo,Func){
   
   #Show three way combinations only.
  
-  setwd(paste(droppath,"Shared Ben and Catherine\\DimDivRevision\\Results",sep=""))
+  setwd(paste(droppath,"Shared Ben and Catherine\\DimDivRevision\\Results_9",sep=""))
   setwd(paste(Tax,Phylo,Func,sep="_"))
   dir.create("1WayBoxplots")
   setwd("1WayBoxplots")
@@ -436,7 +442,7 @@ Hyplist.func<-function(Tax,Phylo,Func){
  
 ###Done
   #save data from that run
-  setwd(paste(droppath,"Shared Ben and Catherine\\DimDivRevision\\Results",sep=""))
+  setwd(paste(droppath,"Shared Ben and Catherine\\DimDivRevision\\Results_9",sep=""))
   setwd(paste(Tax,Phylo,Func,sep="_"))
   
   save.image("plotting.Rdata")
