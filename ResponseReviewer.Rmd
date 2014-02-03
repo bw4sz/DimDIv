@@ -1,0 +1,74 @@
+Observed versus Null Deliniations of Taxonomic Betadiversity
+---------------------
+
+Reviewer stated,
+
+*"I therefore proposed to first distinguish between low and high values of CBD (or PBD or TBD) based on observed values and not based on the null model (e.g., observed TBD>0.7 = high, observed TBD<0.3 = low). For these observed low or high values of CBD (and PBD and TBD), you can run a null model to test (1) whether the high observed values are significantly greater than expected by chance and (2) whether the low observed values are significantly lower than expected by chance. Then, you can conclude according to your framework (8 combinations)."*
+
+The reviewer has been very helpful throughout the development of this manuscript, so i want to fully explore the differences in the two approaches.
+
+What is the relationship between null and observed quantiles of diversity?
+===========
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+require(ggplot2)
+#Set dropbox path
+droppath<-"C:/Users/Ben//Dropbox/"
+
+require(ggplot2)
+
+#Load in data from cluster
+#If just working on ouput files, load below
+data.df<-read.csv(paste(droppath,"Shared Ben and Catherine/DimDivRevision/500Iterations/FinalData.csv",sep=""))
+data.df.null<-read.csv(paste(droppath,"Shared Ben and Catherine/DimDivRevision/500Iterations/FinalDataNull.csv",sep=""))
+
+#Cut the observed taxonomic into above and below cutoffs suggested by reviewer
+data.df.null$observedQ<-cut(data.df.null$Sorenson,breaks=c(0,.3,.7,1),include.lowest=TRUE,labels=c("Low","Random","High"))
+
+#Contingency Table
+cont<-table(data.df.null$Sorenson_Null,data.df.null$observedQ,deparse.level=2)/nrow(data.df.null)
+cont_P<-round(addmargins(cont)*100,2)
+```
+
+
+**Contingency Table (% of Assemblages) for the two approaches**
+```{r,warning=FALSE,message=FALSE,results='asis',echo=FALSE}
+require(xtable)
+colnames(cont_P)<-paste(colnames(cont_P),"Observed")
+rownames(cont_P)<-paste(rownames(cont_P),"Null")
+
+print(xtable(cont_P),type="html")
+```
+Table reads, 2.89% of the total assemblages are in the 'high' observed quantile, but 'low' compared to a null model of richness.
+
+
+Number of Univariate Assemblage Comparisons
+================================
+```{r}
+require(reshape)
+cont_PM<-melt(cont_P)
+colnames(cont_PM)<-c("Null","Observed","Percentage")
+toplot<-melt(cont_PM,id.var="Percentage")
+
+ggplot(toplot,aes(x=value,y=Percentage,fill=variable)) + geom_bar(stat="identity",position="dodge") + labs(x="Assemblage Classification",y=(" % of Assemblages (n=23871)"),fill="Method")
+```
+
+Why use a null model
+-------
+
+We use a null model to compare our observed patterns to a expectated set of values, given the randomization of a defined parameter. The reviewer of course knows this, and i hope i can illustrate the subletly of the argument. As with many null models, its most important to define what is being randomized and why. I have no doubt that the reviewer fully comprehends the extension show below (his/her contribution to this work demonstrates a keen understanding of the topic), but i think it is important to illustrate completely with our data. 
+
+Bias of the Sorenson index
+========
+
+```{r}
+load(paste(droppath,"Shared Ben and Catherine/DimDivRevision/Results/DimDivRevision.RData",sep=""))
+
+#Get the assemblage size for
+data.df$To_N<-sapply(data.df$To,function(x){
+  length(Getsplist(x))})
+
+data.df$From_N<-sapply(data.df$From,function(x){
+  length(Getsplist(x))})
+ggplot(data.df,)
+

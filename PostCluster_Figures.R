@@ -31,11 +31,10 @@ droppath<-"C:/Users/Ben//Dropbox/"
 
 #load data from cluster and env
 #load(paste(droppath,"Shared Ben and Catherine/DimDivRevision/Results/DimDivRevision.RData",sep=""))
-load(paste(droppath,"Shared Ben and Catherine/DimDivRevision/500Iterations/Intervals_.9_.1/DimDivRevisionClusterTaxOnly.RData",sep=""))
 
 #If just working on ouput files, load below
-data.df<-read.csv(paste(droppath,"Shared Ben and Catherine/DimDivRevision/500Iterations/Intervals_.9_.1/FinalData.csv",sep=""))
-data.df.null<-read.csv(paste(droppath,"Shared Ben and Catherine/DimDivRevision/500Iterations/Intervals_.9_.1/FinalDataNull.csv",sep=""))
+data.df<-read.csv(paste(droppath,"Shared Ben and Catherine/DimDivRevision/500Iterations/FinalData.csv",sep=""))
+data.df.null<-read.csv(paste(droppath,"Shared Ben and Catherine/DimDivRevision/500Iterations/FinalDataNull.csv",sep=""))
 
 head(data.df.null)
 head(null_taxlists)
