@@ -39,7 +39,7 @@ gitpath<-"C:/Users/Jorge/Documents/DimDiv/"
 
 
 #load data if desired
-#load("C:/Users/Ben/Dropbox/Shared Ben and Catherine/DimDivRevision/Results/DimDivRevision.RData")
+load(paste(droppath,"Shared Ben and Catherine/DimDivRevision/Results/CompareMetrics.RData",sep=""))
 
 ###Define Source Functions
 
@@ -391,6 +391,9 @@ p<-p+ ylab("Trait Convex Hull") + xlab("Phylogenetic PCDp") + coord_equal()
 p
 ggsave("PhylosorPhylovConvexHull_Taxonomic.svg",height=7,width=7.5,dpi=300)
 
+
+
+
 ###############################
 #Correlation
 ###############################
@@ -423,3 +426,13 @@ trait.compare<-dcast(m.trait,...~Metric,value.var="dist")
 svg("Trait.comparison.svg",height=9,width=8)
 ggplot(data=trait.compare[complete.cases(trait.compare),-c(1,2,4)],aes(x=dendrogram,y=MNTD)) + geom_point() + theme_bw()
 dev.off()
+
+###########Catherine NSF Grant#####################
+data.df2<-dcast(data.df,...~PCD.phylo,value.var="PCD.value.phylo")
+colnames(data.df2)[c(15,16,17)]<-paste(colnames(data.df2)[c(15,16,17)],"Phylo",sep="_")
+data.df2<-dcast(data.df2,...~PCD.func,value.var="PCD.value.func")
+colnames(data.df2)[c(15,16,17)]<-paste(colnames(data.df2)[c(15,16,17)],"Phylo",sep="_")
+
+ggplot(data.df2,aes(x=PCD_Phylo,y=PCDp)) + geom_point() + xlim(c(0,2)) + ylim(c(0,2)) + 
+
+ggplot(data.df,aes(x=))
