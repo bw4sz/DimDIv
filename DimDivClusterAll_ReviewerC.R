@@ -18,7 +18,6 @@ require(scales)
 library(foreach)
 require(raster)
 require(boot)
-require(itertools)
 
 
 ##########################################################
@@ -26,9 +25,9 @@ require(itertools)
 ##########################################################
 
 #Load in the data
-droppath<-"C:/Users/Ben/Dropbox/"
+#droppath<-"C:/Users/Jorge/Dropbox/"
 
-#Cluster
+#Cluster Path
 #load("/home1/02443/bw4sz/DimDiv/DimDivRevision.RData")
 
 #Locally
@@ -36,7 +35,7 @@ load(paste(droppath,"Shared Ben and Catherine/DimDivRevision/Results/DimDivRevis
 
 #Create Cluster
 
-cluster<-makeCluster(4,"SOCK")
+cluster<-makeCluster(2,"SOCK")
 #cluster <- getMPIcluster()
 
 # Print the hostname for each cluster member
@@ -49,19 +48,22 @@ sayhello <- function()
 names <- clusterCall(cluster, sayhello)
 print(unlist(names))
 
-registerDoSNOW(cluster)
+#registerDoSNOW(cluster)
 
 #list loaded packages
 (.packages())
 
-
-comm<-siteXspp[1:20,]
+#Subset assemblage matrix for testing. 
+comm<-siteXspp[1:30,]
 
 dim(comm)
 
 ls()
 
-#Source Functions
+#Source Functions Cluster
+source("/home1/02443/bw4sz/DimDiv/ClusterSourceFunctions.R")
+
+#Source Functions Locally
 source("ClusterSourceFunctions.R")
 
 #Calculate Observed Betadiverisity
@@ -76,6 +78,7 @@ beta_metrics<-beta_metrics[,colnames(beta_metrics) %in% c("To","From","MNTD","Ph
 #####################################################
 #Merge Betadiversity and Environmnetal Dissimilairity
 #####################################################
+
 data.merge<-merge(compare.env,beta_metrics,by=c("To","From"))
 
 #save.image("/home1/02443/bw4sz/DimDiv/DimDivRevisionCluster.RData")
@@ -114,16 +117,21 @@ paste(nrow(sorenson_HL),"taxonomic assemblage comparisons to evaluate")
 clusterExport(cluster, list("sorenson_HL","comm"))
 
 #source functions on each cluster
-clusterEvalQ(cluster,source("ClusterSourceFunctions.R"))
+clusterEvalQ(cluster,source("/home1/02443/bw4sz/DimDiv/ClusterSourceFunctions.R"))
+
+#Source functions locally
+invisible(clusterEvalQ(cluster,source("ClusterSourceFunctions.R")))
 
 #Compute taxonomic betadiversity nulls
-null_taxlists<-rbind.fill(clusterApply(cluster,1:nrow(sorenson_HL),TaxComp))
 
-#save.image("/home1/02443/bw4sz/DimDiv/DimDivRevisionCluster.RData")
+system.time(null_taxlists<-rbind.fill(clusterApply(cluster,1:nrow(sorenson_HL),TaxComp)))
+
+save.image("/home1/02443/bw4sz/DimDiv/DimDivRevisionCluster.RData")
 
 #################################################################################
 #Null Models of Betadiversity - Step 2: Null distribution of Phylogentic
 #################################################################################
+
 
 phylo_HL<-data.merge[!data.merge$observedP %in% "Random",]
 
@@ -137,10 +145,12 @@ sp.list<-apply(siteXspp,1,function(x){
 
 splist<-colnames(siteXspp)
 
-clusterExport(cluster, list("phylo_HL", "splist","sp.list","siteXspp","richness_sites","beta_all","tree","mon"))
-clusterEvalQ(cluster,source("ClusterSourceFunctions.R"))
+j <- getMPIcluster()
 
-Null_dataframe0<-clusterApply(cluster,1:2,Phylo_N)
+clusterExport(j, list("phylo_HL", "splist","sp.list","siteXspp","richness_sites","beta_all","tree","mon"))
+clusterEvalQ(j,source("/home1/02443/bw4sz/DimDiv/ClusterSourceFunctions.R"))
+
+Null_dataframe0<-clusterApply(j,1:100,Phylo_N)
 
 #If this has failed, read and aggregate from file 
 head(Null_dataframe0[[1]])
@@ -153,7 +163,7 @@ Null_dataframe<-Null_dataframe[,colnames(Null_dataframe) %in% c("To","From","MNT
 #fil<-list.files("/home1/02443/bw4sz/DimDiv/Iterations",full.names=TRUE)
 #fil.l<-lapply(fil,read.csv,row.names=1)
 #Null_dataframe<-rbind.fill(fil.l)
-#save.image("/home1/02443/bw4sz/DimDiv/DimDivRevisionCluster.RData")
+save.image("/home1/02443/bw4sz/DimDiv/DimDivRevisionCluster.RData")
 
 #################################################################################
 #Null Models of Betadiversity - Step 3: Comparing Null phylogenetic to observed
@@ -165,14 +175,17 @@ paste(nrow(phylo_HL),"phylogenetic assemblage comparisons to evaluate")
 #Test inner function
 Null_P(1)
 
+cluster <- getMPIcluster()
+
 #Export objects to cluster
 clusterExport(cluster, list("phylo_HL", "Null_dataframe"))
-clusterEvalQ(cluster,source("ClusterSourceFunctions.R"))
+clusterEvalQ(cluster,source("/home1/02443/bw4sz/DimDiv/ClusterSourceFunctions.R"))
 
 null_Phylo<-rbind.fill(clusterApply(cluster,1:nrow(phylo_HL),Null_P))
 
 #Bind together the null model outputs
 colnames(null_Phylo)<-c("To","From",paste(colnames(Null_dataframe)[!colnames(Null_dataframe) %in% c("To","From","Iteration","Sorenson")],"Null",sep="_"))
+save.image("/home1/02443/bw4sz/DimDiv/DimDivRevisionCluster.RData")
 
 #################################################################################
 #Null Models of Betadiversity - Step 4: Null Distribution of Trait betadiversity
@@ -180,7 +193,7 @@ colnames(null_Phylo)<-c("To","From",paste(colnames(Null_dataframe)[!colnames(Nul
 
 trait_HL<-data.merge[!data.merge$observedF %in% "Random",]
 clusterExport(cluster, list("trait_HL", "splist","sp.list","siteXspp","richness_sites","beta_all","tree","mon"))
-clusterEvalQ(cluster,source("ClusterSourceFunctions.R"))
+clusterEvalQ(cluster,source("/home1/02443/bw4sz/DimDiv/ClusterSourceFunctions.R"))
 
 Null_dataframeTrait<-clusterApply(cluster,1:2,Trait_N)
 
@@ -198,7 +211,7 @@ Null_dataframeTraitF<-Null_dataframeTraitF[,colnames(Null_dataframeTraitF) %in% 
 
 #Null_dataframeTraitF<-rbind.fill(fil.l)
 
-#save.image("/home1/02443/bw4sz/DimDiv/DimDivRevisionCluster.RData")
+save.image("/home1/02443/bw4sz/DimDiv/DimDivRevisionCluster.RData")
 
 #################################################################################
 #Null Models of Betadiversity - Step 5: Comparing Null trait to observed
@@ -212,7 +225,7 @@ Null_T(1)
 
 #Export objects to cluster
 clusterExport(cluster, list("trait_HL", "Null_dataframeTraitF"))
-clusterEvalQ(cluster,source("ClusterSourceFunctions.R"))
+clusterEvalQ(cluster,source("/home1/02443/bw4sz/DimDiv/ClusterSourceFunctions.R"))
 
 null_Trait<-rbind.fill(clusterApply(cluster,1:nrow(trait_HL),Null_T))
 
@@ -220,6 +233,8 @@ null_Trait<-rbind.fill(clusterApply(cluster,1:nrow(trait_HL),Null_T))
 colnames(null_Trait)<-c("To","From",paste(colnames(Null_dataframeTraitF)[!colnames(Null_dataframeTraitF) %in% c("To","From","Iteration","Sorenson")],"Null",sep="_"))
 
 print(nrow(null_Trait))
+
+save.image("/home1/02443/bw4sz/DimDiv/DimDivRevisionCluster.RData")
 
 #################################################################################
 #Null Models of Betadiversity - Step 6: Combine outputs
