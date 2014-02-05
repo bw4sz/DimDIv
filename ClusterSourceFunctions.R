@@ -306,8 +306,6 @@ Null_P<-function(x){
   return(out)
 }
 
-print("Functions Sourced")
-
 
 #Deliniate high or low betadiversity compared to null trait
 
