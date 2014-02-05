@@ -128,7 +128,7 @@ TaxN<-function(r){
 ######################################################
 #Define function to compare null taxonomic to observed
 #######################################################
-TaxComp<-function(x){
+TaxComp<-function(r){
   
   #Get row in matrix
   r<-sorenson_HL[x,]
