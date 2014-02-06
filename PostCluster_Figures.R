@@ -30,13 +30,21 @@ require(boot)
 droppath<-"C:/Users/Ben//Dropbox/"
 
 #load data from cluster and env
-#load(paste(droppath,"Shared Ben and Catherine/DimDivRevision/Results/DimDivRevision.RData",sep=""))
+load(paste(droppath,"Shared Ben and Catherine/DimDivRevision/Results/DimDivRevision.RData",sep=""))
 #load(paste(droppath,"Shared Ben and Catherine/DimDivRevision/500Iterations/Intervals_.9_.1/DimDivRevisionCluster.RData",sep=""))
 
 #If just working on ouput files, load below
 data.df<-read.csv(paste(droppath,"Shared Ben and Catherine/DimDivRevision/Results_Feb3/FinalData.csv",sep=""),row.names=1)
 data.df.null<-read.csv(paste(droppath,"Shared Ben and Catherine/DimDivRevision/Results_Feb3/FinalDataNull.csv",sep=""),row.names=1)
 
+#fill na as random
+data.df.null[is.na(data.df.null$Sorenson_Null),"Sorenson_Null"]<-"Random"
+data.df.null[is.na(data.df.null$Phylosor.Phylo_Null),"Phylosor.Phylo_Null"]<-"Random"
+data.df.null[is.na(data.df.null$MNTD_Null),"MNTD_Null"]<-"Random"
+
+#observed combination
+obs<-round(ftable(data.df.null$observedT,data.df.null$observedP,data.df.null$observedF,deparse.level=2)/nrow(data.df.null),2)*100
+s
 #There is an anomaly in the null cluster, if the assemblages are identical, there is no quantile of the distribution, so the cumulative distribution is =1, thus making the null high
 data.df.null[data.df.null$Sorenson==0,]
 

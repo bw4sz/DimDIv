@@ -1,4 +1,4 @@
-Observed versus Null Deliniations of Taxonomic Betadiversity
+Observed versus Null Deliniations of Betadiversity
 ---------------------
 
 Reviewer stated,
@@ -66,13 +66,13 @@ Table reads, 0.10% of the total assemblages are in the 'low' observed quantile, 
 Trait Betadiversity
 ------------------------
 
-**Columns are observed values of betadiversity (High >.7), (Low < .3), rows are null values where high is delinated by comparing the observed betadiversity to 1000 assemblage comparison of equal taxonomic betadiversity (alpha =.05)**
+**Columns are observed values of betadiversity (High >quantile(.7)), (Low < quantile(.3)), rows are null values where high is delinated by comparing the observed betadiversity to 1000 assemblage comparison of equal taxonomic betadiversity (alpha =.05)**
 
 ```{r,warning=FALSE,message=FALSE,results='asis',echo=FALSE}
 
 #Cut the observed taxonomic into above and below cutoffs suggested by reviewer
 br<-quantile(data.df.null$MNTD,c(.3,.7))
-data.df.null$observedQ<-cut(data.df.null$MNTD,breaks=c(0,br,1),include.lowest=TRUE,labels=c("Low","Random","High"))
+data.df.null$observedQ<-cut(data.df.null$MNTD,breaks=c(0,br,max(data.df.null$MNTD)),include.lowest=TRUE,labels=c("Low","Random","High"))
 
 #Contingency Table
 cont<-table(data.df.null$MNTD_Null,data.df.null$observedQ,deparse.level=2)/nrow(data.df.null)
@@ -82,13 +82,10 @@ print(xtable(cont_P),type="html")
 ```
 
 There are no occurences of the proposed problem for trait betadiversity
-The reviewer's strategy would impose an additional arbitrary constraint on the deliniation of betadiversity, suggesting that above ".7" and below ".3" should be first set to high and low. This would mainly achieve an overall supression of the number of comparisons in each of the analysis. Given that we know that these metrics all are sensitive to richness (Kraft 2007, Hardy 2007, Swenson 2012), why simply test whether the observed value is greater on less than expected given the richness of the two assemblages. 
-
-Further, the number of times this occurs is very minimal, compared to the erroneous error that a sorenson of .5, but greater than 1000 random samples of communities of the same size, is not considered greater than expected.
 
 Distribution of Observed and Null
 
-```{r}
+```{r,message=TRUE,echo=FALSE,warning=FALSE}
 ggplot(data.df.null,aes(Sorenson,fill=Sorenson_Null)) + geom_histogram()
 ggplot(data.df.null,aes(Phylosor.Phylo,fill=Phylosor.Phylo_Null)) + geom_histogram()
 ggplot(data.df.null,aes(MNTD,fill=MNTD_Null)) + geom_histogram()

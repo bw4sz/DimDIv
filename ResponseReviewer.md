@@ -1,4 +1,4 @@
-Observed versus Null Deliniations of Taxonomic Betadiversity
+Observed versus Null Deliniations of Betadiversity
 ---------------------
 
 Reviewer stated,
@@ -20,7 +20,7 @@ What is the relationship between null and observed quantiles of diversity?
 Taxonomic Betadiversity
 ------------------------
 <!-- html table generated in R 3.0.2 by xtable 1.7-1 package -->
-<!-- Wed Feb 05 22:14:00 2014 -->
+<!-- Wed Feb 05 22:40:03 2014 -->
 <TABLE border=1>
 <TR> <TH>  </TH> <TH> Low </TH> <TH> Random </TH> <TH> High </TH> <TH> Sum </TH>  </TR>
   <TR> <TD align="right"> High </TD> <TD align="right"> 0.00 </TD> <TD align="right"> 0.00 </TD> <TD align="right"> 46.00 </TD> <TD align="right"> 46.00 </TD> </TR>
@@ -38,7 +38,7 @@ Phylogenetic Betadiversity
 **Columns are observed values of betadiversity (High >.7), (Low < .3), rows are null values where high is delinated by comparing the observed betadiversity to 1000 assemblage comparison of equal taxonomic betadiversity (alpha =.05)**
 
 <!-- html table generated in R 3.0.2 by xtable 1.7-1 package -->
-<!-- Wed Feb 05 22:14:00 2014 -->
+<!-- Wed Feb 05 22:40:03 2014 -->
 <TABLE border=1>
 <TR> <TH>  </TH> <TH> Low </TH> <TH> Random </TH> <TH> High </TH> <TH> Sum </TH>  </TR>
   <TR> <TD align="right"> High </TD> <TD align="right"> 0.06 </TD> <TD align="right"> 2.57 </TD> <TD align="right"> 34.71 </TD> <TD align="right"> 37.34 </TD> </TR>
@@ -53,31 +53,23 @@ Table reads, 0.10% of the total assemblages are in the 'low' observed quantile, 
 Trait Betadiversity
 ------------------------
 
-
 **Columns are observed values of betadiversity (High >.7), (Low < .3), rows are null values where high is delinated by comparing the observed betadiversity to 1000 assemblage comparison of equal taxonomic betadiversity (alpha =.05)**
 
 <!-- html table generated in R 3.0.2 by xtable 1.7-1 package -->
-<!-- Wed Feb 05 22:14:01 2014 -->
+<!-- Wed Feb 05 22:40:03 2014 -->
 <TABLE border=1>
 <TR> <TH>  </TH> <TH> Low </TH> <TH> Random </TH> <TH> High </TH> <TH> Sum </TH>  </TR>
-  <TR> <TD align="right"> High </TD> <TD align="right"> 0.02 </TD> <TD align="right"> 0.05 </TD> <TD align="right"> 1.06 </TD> <TD align="right"> 1.13 </TD> </TR>
-  <TR> <TD align="right"> Low </TD> <TD align="right"> 0.78 </TD> <TD align="right"> 5.38 </TD> <TD align="right"> 0.06 </TD> <TD align="right"> 6.22 </TD> </TR>
-  <TR> <TD align="right"> Random </TD> <TD align="right"> 1.97 </TD> <TD align="right"> 21.80 </TD> <TD align="right"> 38.88 </TD> <TD align="right"> 62.65 </TD> </TR>
-  <TR> <TD align="right"> Sum </TD> <TD align="right"> 2.77 </TD> <TD align="right"> 27.23 </TD> <TD align="right"> 40.00 </TD> <TD align="right"> 70.00 </TD> </TR>
+  <TR> <TD align="right"> High </TD> <TD align="right"> 0.07 </TD> <TD align="right"> 1.06 </TD> <TD align="right"> 6.22 </TD> <TD align="right"> 7.35 </TD> </TR>
+  <TR> <TD align="right"> Low </TD> <TD align="right"> 6.16 </TD> <TD align="right"> 0.06 </TD> <TD align="right"> 0.00 </TD> <TD align="right"> 6.22 </TD> </TR>
+  <TR> <TD align="right"> Random </TD> <TD align="right"> 23.77 </TD> <TD align="right"> 38.88 </TD> <TD align="right"> 23.78 </TD> <TD align="right"> 86.43 </TD> </TR>
+  <TR> <TD align="right"> Sum </TD> <TD align="right"> 30.00 </TD> <TD align="right"> 40.00 </TD> <TD align="right"> 30.00 </TD> <TD align="right"> 100.00 </TD> </TR>
    </TABLE>
 
 
 There are no occurences of the proposed problem for trait betadiversity
-The reviewer's strategy would impose an additional arbitrary constraint on the deliniation of betadiversity, suggesting that above ".7" and below ".3" should be first set to high and low. This would mainly achieve an overall supression of the number of comparisons in each of the analysis. Given that we know that these metrics all are sensitive to richness (Kraft 2007, Hardy 2007, Swenson 2012), why simply test whether the observed value is greater on less than expected given the richness of the two assemblages. 
-
-Further, the number of times this occurs is very minimal, compared to the erroneous error that a sorenson of .5, but greater than 1000 random samples of communities of the same size, is not considered greater than expected.
 
 Distribution of Observed and Null
 
-
-```r
-ggplot(data.df.null, aes(Sorenson, fill = Sorenson_Null)) + geom_histogram()
-```
 
 ```
 ## stat_bin: binwidth defaulted to range/30. Use 'binwidth = x' to adjust this.
@@ -85,19 +77,11 @@ ggplot(data.df.null, aes(Sorenson, fill = Sorenson_Null)) + geom_histogram()
 
 ![plot of chunk unnamed-chunk-5](figure/unnamed-chunk-51.png) 
 
-```r
-ggplot(data.df.null, aes(Phylosor.Phylo, fill = Phylosor.Phylo_Null)) + geom_histogram()
-```
-
 ```
 ## stat_bin: binwidth defaulted to range/30. Use 'binwidth = x' to adjust this.
 ```
 
 ![plot of chunk unnamed-chunk-5](figure/unnamed-chunk-52.png) 
-
-```r
-ggplot(data.df.null, aes(MNTD, fill = MNTD_Null)) + geom_histogram()
-```
 
 ```
 ## stat_bin: binwidth defaulted to range/30. Use 'binwidth = x' to adjust this.
