@@ -27,16 +27,15 @@ require(scales)
 require(boot)
 
 #Set dropbox path
-droppath<-"C:/Users/Jorge//Dropbox/"
+droppath<-"C:/Users/Ben//Dropbox/"
 
 #load data from cluster and env
-load(paste(droppath,"Shared Ben and Catherine/DimDivRevision/Results/DimDivRevision.RData",sep=""))
-load(paste(droppath,"Shared Ben and Catherine/DimDivRevision/500Iterations/Intervals_.9_.1/DimDivRevisionCluster.RData",sep=""))
+#load(paste(droppath,"Shared Ben and Catherine/DimDivRevision/Results/DimDivRevision.RData",sep=""))
+#load(paste(droppath,"Shared Ben and Catherine/DimDivRevision/500Iterations/Intervals_.9_.1/DimDivRevisionCluster.RData",sep=""))
 
 #If just working on ouput files, load below
-#data.df<-read.csv(paste(droppath,"Shared Ben and Catherine/DimDivRevision/500Iterations/FinalData.csv",sep=""))
-#data.df.null<-read.csv(paste(droppath,"Shared Ben and Catherine/DimDivRevision/500Iterations/FinalDataNull.csv",sep=""))
-
+data.df<-read.csv(paste(droppath,"Shared Ben and Catherine/DimDivRevision/Results_Feb3/FinalData.csv",sep=""),row.names=1)
+data.df.null<-read.csv(paste(droppath,"Shared Ben and Catherine/DimDivRevision/Results_Feb3/FinalDataNull.csv",sep=""),row.names=1)
 
 #There is an anomaly in the null cluster, if the assemblages are identical, there is no quantile of the distribution, so the cumulative distribution is =1, thus making the null high
 data.df.null[data.df.null$Sorenson==0,]
@@ -49,7 +48,7 @@ data.df.null[data.df.null$Sorenson==0,"MNTD_Null"]<-"Low"
 #Tables and Statistics
 #########################################################################################
 
-setwd(paste(droppath,"Shared Ben and Catherine\\DimDivRevision\\Results_9",sep=""))
+setwd(paste(droppath,"Shared Ben and Catherine\\DimDivRevision\\Results_Feb3",sep=""))
 
 #Get the bounds of each 
 range_metrics<-list()
@@ -69,11 +68,11 @@ range_metrics<-melt(range_metrics)
 write.csv(range_metrics,"Range_Metrics.csv")
 
 #Find Prevalence of each combination
-data_prev<-lapply(colnames(data.df.null)[15:17],function(x){
+data_prev<-lapply(colnames(data.df.null)[18:20],function(x){
   range_prev<-table(data.df.null[,x])/(nrow(comm)*(nrow(comm)-1)/2)
   })
 
-names(data_prev)<-colnames(data.df.null)[15:17]
+names(data_prev)<-colnames(data.df.null)[18:20]
 data_prev<-melt(data_prev)
 data_prev<-cast(data_prev,L1~Var.1)
 rownames(data_prev)<-data_prev[,1]
@@ -113,7 +112,7 @@ ggplot(data.df.null,aes(y=MNTD,fill=Phylosor.Phylo_Null,x=MNTD_Null)) + geom_box
 ##########################################
 #Plot each of the metrics with their ranges
 ##########################################
-range_plots<-lapply(12:14,function(x){
+range_plots<-lapply(18:20,function(x){
   print(colnames(data.df.null)[x])
   print(colnames(data.df.null)[x+3])
   p<-ggplot(data.df.null,aes(y=data.df.null[,colnames(data.df.null)[x]],x=data.df.null[,colnames(data.df.null)[x+3]])) + geom_boxplot()
@@ -130,7 +129,7 @@ range_plots<-lapply(12:14,function(x){
 #Create multiple options for the hyplist, hold them in a list and spit them to file seperately
 
 Hyplist.func<-function(Tax,Phylo,Func){
-  setwd(paste(droppath,"Shared Ben and Catherine\\DimDivRevision\\Results",sep=""))
+  setwd(paste(droppath,"Shared Ben and Catherine\\DimDivRevision\\Results_Feb3",sep=""))
   
   #Create directory
   dir.store<-dir.create(paste(Tax,Phylo,Func,sep="_"))
@@ -169,7 +168,7 @@ Hyplist.func<-function(Tax,Phylo,Func){
   #create parallel cluster
   
   #run 1000 iterations
-  cl<-makeCluster(8,"SOCK")
+  cl<-makeCluster(4,"SOCK")
   registerDoSNOW(cl)
   boot.run<-foreach(x=1:1000,.export="data.df") %dopar% {
     
@@ -231,7 +230,7 @@ Hyplist.func<-function(Tax,Phylo,Func){
   remove.level<-levels(as.factor(HypBox$L1))[str_detect(levels(as.factor(HypBox$L1)),"Random")]
   HypBox<-HypBox[!HypBox$L1 %in% remove.level,]
   
-  setwd(paste(droppath,"Shared Ben and Catherine\\DimDivRevision\\Results",sep=""))
+  setwd(paste(droppath,"Shared Ben and Catherine\\DimDivRevision\\Results_Feb3",sep=""))
   setwd(paste(Tax,Phylo,Func,sep="_"))
   dir.create("3WayBoxplots")
   setwd("3WayBoxplots")
@@ -265,7 +264,7 @@ Hyplist.func<-function(Tax,Phylo,Func){
   
   #Function for spatial lines for all hypothesis, overlayed on an Ecuador Map
   
-  setwd(paste(droppath,"Shared Ben and Catherine\\DimDivRevision\\Results",sep=""))
+  setwd(paste(droppath,"Shared Ben and Catherine\\DimDivRevision\\Results_Feb3",sep=""))
   setwd(paste(Tax,Phylo,Func,sep="_"))
   dir.create("Maps")
   setwd("Maps")
@@ -276,7 +275,7 @@ Hyplist.func<-function(Tax,Phylo,Func){
   #plot all combinations
   map_names<-c("Low.Low.Low","High.Low.Low","High.High.Low","Low.High.Low","High.High.High","Low.High.High","Low.Low.High","High.Low.High")
   
-  cl<-makeCluster(7,"SOCK")
+  cl<-makeCluster(3,"SOCK")
   maps.Hyp<-foreach(f=1:length(map_names),.packages=c("reshape","raster","rgdal")) %do% {
     jpeg(paste(map_names[f],".jpeg",sep=""),height= 10, width = 10, unit="in", res=300)
     if(length(Hyplist[[map_names[f]]])>0){
@@ -398,7 +397,7 @@ Hyplist.func<-function(Tax,Phylo,Func){
   
   #Show three way combinations only.
  
-  setwd(paste(droppath,"Shared Ben and Catherine\\DimDivRevision\\Results",sep=""))
+  setwd(paste(droppath,"Shared Ben and Catherine\\DimDivRevision\\Results_Feb3",sep=""))
   setwd(paste(Tax,Phylo,Func,sep="_"))
   dir.create("1WayBoxplots")
   setwd("1WayBoxplots")
@@ -436,7 +435,7 @@ Hyplist.func<-function(Tax,Phylo,Func){
  
 ###Done
   #save data from that run
-  setwd(paste(droppath,"Shared Ben and Catherine\\DimDivRevision\\Results",sep=""))
+  setwd(paste(droppath,"Shared Ben and Catherine\\DimDivRevision\\Results_Feb3",sep=""))
   setwd(paste(Tax,Phylo,Func,sep="_"))
   
   save.image("plotting.Rdata")
@@ -447,6 +446,24 @@ Hyplist.func<-function(Tax,Phylo,Func){
 system.time(Hyplist.func(Tax="Sorenson_Null",Phylo="Phylosor.Phylo_Null",Func="MNTD_Null"))
 
 
+##########REviewier observed versus null
+#Which have high observed but low betadiversity
+ggplot(data.df.null,aes(Sorenson,fill=Sorenson_Null)) + geom_histogram()
+ggplot(data.df.null,aes(Phylosor.Phylo,fill=Phylosor.Phylo_Null)) + geom_histogram()
+ggplot(data.df.null,aes(MNTD,fill=MNTD_Null)) + geom_histogram()
+
+ggplot(data.df.null,aes(Sorenson,fill=Sorenson_Null)) + geom_histogram()
+ggplot(data.df.null,aes(Sorenson,fill=Sorenson_Null)) + geom_histogram()
+ex<-data.df.null[data.df.null$Sorenson > .5 & data.df.null$Sorenson_Null=="Low",]
+
+ex[1,]
+#Take an example
+a<-Getsplist("129")
+b<-Getsplist("161")
+
+a %in% b
+b %in% a
+comm[c("129","161"),]
 ################################################################
 #Reviewer 1 would like to see a better explanation of trait diversity and intra specific variation
 #######################################################################
@@ -578,7 +595,7 @@ ggplot(aggN,aes(x=totalN,y=meanNull)) + geom_point() + geom_smooth(method="lm")
 ggplot(data.df.null,aes(y=Sorenson,x=Phylosor.Phylo_Null)) + geom_boxplot()
 
 #Richness and tax diversity
-aggN<-aggregate(Null_dataframe$Sorenson,list(Null_dataframe$To),mean,na.rm=TRUE)
+aggN<-aggregate(data.df.null$Sorenson,list(data.df.null$To),mean,na.rm=TRUE)
 aggN$totalN<-apply(aggN,1,function(x){
   a<-Getsplist(as.character(x[[1]]))
   return(length(a))

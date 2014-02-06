@@ -22,53 +22,76 @@ require(ggplot2)
 data.df<-read.csv(paste(droppath,"Shared Ben and Catherine/DimDivRevision/500Iterations/FinalData.csv",sep=""))
 data.df.null<-read.csv(paste(droppath,"Shared Ben and Catherine/DimDivRevision/500Iterations/FinalDataNull.csv",sep=""))
 
+```
+
+**Contingency Table (% of Assemblages) for the two approaches**
+
+**Columns are observed values of betadiversity (High >.7), (Low < .3), rows are null values where high is delinated by comparing the observed betadiversity to 1000 assemblage comparison of equal richnes (alpha =.05)**
+
+Taxonomic Betadiversity
+------------------------
+```{r,warning=FALSE,message=FALSE,results='asis',echo=FALSE}
+
 #Cut the observed taxonomic into above and below cutoffs suggested by reviewer
 data.df.null$observedQ<-cut(data.df.null$Sorenson,breaks=c(0,.3,.7,1),include.lowest=TRUE,labels=c("Low","Random","High"))
 
 #Contingency Table
 cont<-table(data.df.null$Sorenson_Null,data.df.null$observedQ,deparse.level=2)/nrow(data.df.null)
 cont_P<-round(addmargins(cont)*100,2)
-```
-
-
-**Contingency Table (% of Assemblages) for the two approaches**
-```{r,warning=FALSE,message=FALSE,results='asis',echo=FALSE}
 require(xtable)
-colnames(cont_P)<-paste(colnames(cont_P),"Observed")
-rownames(cont_P)<-paste(rownames(cont_P),"Null")
-
 print(xtable(cont_P),type="html")
 ```
-Table reads, 2.89% of the total assemblages are in the 'high' observed quantile, but 'low' compared to a null model of richness.
 
+Table reads, 2.89% of the total assemblages are in the 'high' observed quantile, but 'low' compared to a null model of richness. The difference in low taxonomic betadiversity is due assemblages have greater than sorenson =.3, but having less taxonomic betadiversity compared to 1000 assemblage comparisons maintaining richness.
 
-Number of Univariate Assemblage Comparisons
-================================
-```{r}
-require(reshape)
-cont_PM<-melt(cont_P)
-colnames(cont_PM)<-c("Null","Observed","Percentage")
-toplot<-melt(cont_PM,id.var="Percentage")
+Phylogenetic Betadiversity
+------------------------
 
-ggplot(toplot,aes(x=value,y=Percentage,fill=variable)) + geom_bar(stat="identity",position="dodge") + labs(x="Assemblage Classification",y=(" % of Assemblages (n=23871)"),fill="Method")
+**Columns are observed values of betadiversity (High >.7), (Low < .3), rows are null values where high is delinated by comparing the observed betadiversity to 1000 assemblage comparison of equal taxonomic betadiversity (alpha =.05)**
+
+```{r,warning=FALSE,message=FALSE,results='asis',echo=FALSE}
+
+#Cut the observed taxonomic into above and below cutoffs suggested by reviewer
+data.df.null$observedQ<-cut(data.df.null$Phylosor.Phylo,breaks=c(0,.3,.7,1),include.lowest=TRUE,labels=c("Low","Random","High"))
+
+#Contingency Table
+cont<-table(data.df.null$Phylosor.Phylo_Null,data.df.null$observedQ,deparse.level=2)/nrow(data.df.null)
+cont_P<-round(addmargins(cont)*100,2)
+require(xtable)
+print(xtable(cont_P),type="html")
 ```
 
-Why use a null model
--------
+Table reads, 0.10% of the total assemblages are in the 'low' observed quantile, but 'high' compared to a null model of taxonomic.
 
-We use a null model to compare our observed patterns to a expectated set of values, given the randomization of a defined parameter. The reviewer of course knows this, and i hope i can illustrate the subletly of the argument. As with many null models, its most important to define what is being randomized and why. I have no doubt that the reviewer fully comprehends the extension show below (his/her contribution to this work demonstrates a keen understanding of the topic), but i think it is important to illustrate completely with our data. 
+Trait Betadiversity
+------------------------
 
-Bias of the Sorenson index
-========
+**Columns are observed values of betadiversity (High >.7), (Low < .3), rows are null values where high is delinated by comparing the observed betadiversity to 1000 assemblage comparison of equal taxonomic betadiversity (alpha =.05)**
+
+```{r,warning=FALSE,message=FALSE,results='asis',echo=FALSE}
+
+#Cut the observed taxonomic into above and below cutoffs suggested by reviewer
+br<-quantile(data.df.null$MNTD,c(.3,.7))
+data.df.null$observedQ<-cut(data.df.null$MNTD,breaks=c(0,br,1),include.lowest=TRUE,labels=c("Low","Random","High"))
+
+#Contingency Table
+cont<-table(data.df.null$MNTD_Null,data.df.null$observedQ,deparse.level=2)/nrow(data.df.null)
+cont_P<-round(addmargins(cont)*100,2)
+require(xtable)
+print(xtable(cont_P),type="html")
+```
+
+There are no occurences of the proposed problem for trait betadiversity
+The reviewer's strategy would impose an additional arbitrary constraint on the deliniation of betadiversity, suggesting that above ".7" and below ".3" should be first set to high and low. This would mainly achieve an overall supression of the number of comparisons in each of the analysis. Given that we know that these metrics all are sensitive to richness (Kraft 2007, Hardy 2007, Swenson 2012), why simply test whether the observed value is greater on less than expected given the richness of the two assemblages. 
+
+Further, the number of times this occurs is very minimal, compared to the erroneous error that a sorenson of .5, but greater than 1000 random samples of communities of the same size, is not considered greater than expected.
+
+Distribution of Observed and Null
 
 ```{r}
-load(paste(droppath,"Shared Ben and Catherine/DimDivRevision/Results/DimDivRevision.RData",sep=""))
+ggplot(data.df.null,aes(Sorenson,fill=Sorenson_Null)) + geom_histogram()
+ggplot(data.df.null,aes(Phylosor.Phylo,fill=Phylosor.Phylo_Null)) + geom_histogram()
+ggplot(data.df.null,aes(MNTD,fill=MNTD_Null)) + geom_histogram()
+```
 
-#Get the assemblage size for
-data.df$To_N<-sapply(data.df$To,function(x){
-  length(Getsplist(x))})
-
-data.df$From_N<-sapply(data.df$From,function(x){
-  length(Getsplist(x))})
-ggplot(data.df,)
-
+Perhaps one way forward to avoid the terms "High" and "Low" and refer directly to what we mean(eg. Greater than expected phylogenetic betadiversity given the taxonomic betadiversity.) 
