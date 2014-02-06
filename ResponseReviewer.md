@@ -1,4 +1,4 @@
-Observed versus Null Deliniations of Taxonomic Betadiversity
+Observed versus Null Deliniations of Betadiversity
 ---------------------
 
 Reviewer stated,
