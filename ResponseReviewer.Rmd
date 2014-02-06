@@ -25,8 +25,11 @@ data.df.null<-read.csv(paste(droppath,"Shared Ben and Catherine/DimDivRevision/5
 ```
 
 **Contingency Table (% of Assemblages) for the two approaches**
+---------
 
-**Columns are observed values of betadiversity (High >.7), (Low < .3), rows are null values where high is delinated by comparing the observed betadiversity to 1000 assemblage comparison of equal richnes (alpha =.05)**
+**Columns are observed values of betadiversity (High >.7), (Low < .3)**
+
+**Rows are null values where high is delinated by comparing the observed betadiversity to 1000 assemblage comparison of equal richnes (alpha =.05)**
 
 Taxonomic Betadiversity
 ------------------------
@@ -47,7 +50,9 @@ Table reads, 2.89% of the total assemblages are in the 'high' observed quantile,
 Phylogenetic Betadiversity
 ------------------------
 
-**Columns are observed values of betadiversity (High >.7), (Low < .3), rows are null values where high is delinated by comparing the observed betadiversity to 1000 assemblage comparison of equal taxonomic betadiversity (alpha =.05)**
+**Columns are observed values of betadiversity (High >.7), (Low < .3)**
+
+**Rows are null values where high is delinated by comparing the observed betadiversity to 1000 assemblage comparison of equal taxonomic betadiversity (alpha =.05)**
 
 ```{r,warning=FALSE,message=FALSE,results='asis',echo=FALSE}
 
@@ -61,12 +66,14 @@ require(xtable)
 print(xtable(cont_P),type="html")
 ```
 
-Table reads, 0.10% of the total assemblages are in the 'low' observed quantile, but 'high' compared to a null model of taxonomic.
+Table reads, 0.06% of the total assemblages are in the 'low' observed quantile, but 'high' compared to a null model of taxonomic.
 
 Trait Betadiversity
 ------------------------
 
-**Columns are observed values of betadiversity (High >quantile(.7)), (Low < quantile(.3)), rows are null values where high is delinated by comparing the observed betadiversity to 1000 assemblage comparison of equal taxonomic betadiversity (alpha =.05)**
+**Columns are observed values of betadiversity (High >quantile(.7)), (Low < quantile(.3))** 
+
+**Rows are null values where high is delinated by comparing the observed betadiversity to 1000 assemblage comparison of equal taxonomic betadiversity (alpha =.05)**
 
 ```{r,warning=FALSE,message=FALSE,results='asis',echo=FALSE}
 
@@ -81,7 +88,8 @@ require(xtable)
 print(xtable(cont_P),type="html")
 ```
 
-There are no occurences of the proposed problem for trait betadiversity
+
+Table reads, 0.07% of the total assemblages are in the 'low' observed quantile, but 'high' compared to a null model of taxonomic.
 
 Distribution of Observed and Null
 

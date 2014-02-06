@@ -14,13 +14,16 @@ What is the relationship between null and observed quantiles of diversity?
 
 
 **Contingency Table (% of Assemblages) for the two approaches**
+---------
 
-**Columns are observed values of betadiversity (High >.7), (Low < .3), rows are null values where high is delinated by comparing the observed betadiversity to 1000 assemblage comparison of equal richnes (alpha =.05)**
+**Columns are observed values of betadiversity (High >.7), (Low < .3)**
+
+**Rows are null values where high is delinated by comparing the observed betadiversity to 1000 assemblage comparison of equal richnes (alpha =.05)**
 
 Taxonomic Betadiversity
 ------------------------
 <!-- html table generated in R 3.0.2 by xtable 1.7-1 package -->
-<!-- Wed Feb 05 22:40:03 2014 -->
+<!-- Wed Feb 05 22:52:59 2014 -->
 <TABLE border=1>
 <TR> <TH>  </TH> <TH> Low </TH> <TH> Random </TH> <TH> High </TH> <TH> Sum </TH>  </TR>
   <TR> <TD align="right"> High </TD> <TD align="right"> 0.00 </TD> <TD align="right"> 0.00 </TD> <TD align="right"> 46.00 </TD> <TD align="right"> 46.00 </TD> </TR>
@@ -35,10 +38,12 @@ Table reads, 2.89% of the total assemblages are in the 'high' observed quantile,
 Phylogenetic Betadiversity
 ------------------------
 
-**Columns are observed values of betadiversity (High >.7), (Low < .3), rows are null values where high is delinated by comparing the observed betadiversity to 1000 assemblage comparison of equal taxonomic betadiversity (alpha =.05)**
+**Columns are observed values of betadiversity (High >.7), (Low < .3)**
+
+**Rows are null values where high is delinated by comparing the observed betadiversity to 1000 assemblage comparison of equal taxonomic betadiversity (alpha =.05)**
 
 <!-- html table generated in R 3.0.2 by xtable 1.7-1 package -->
-<!-- Wed Feb 05 22:40:03 2014 -->
+<!-- Wed Feb 05 22:52:59 2014 -->
 <TABLE border=1>
 <TR> <TH>  </TH> <TH> Low </TH> <TH> Random </TH> <TH> High </TH> <TH> Sum </TH>  </TR>
   <TR> <TD align="right"> High </TD> <TD align="right"> 0.06 </TD> <TD align="right"> 2.57 </TD> <TD align="right"> 34.71 </TD> <TD align="right"> 37.34 </TD> </TR>
@@ -48,15 +53,17 @@ Phylogenetic Betadiversity
    </TABLE>
 
 
-Table reads, 0.10% of the total assemblages are in the 'low' observed quantile, but 'high' compared to a null model of taxonomic.
+Table reads, 0.06% of the total assemblages are in the 'low' observed quantile, but 'high' compared to a null model of taxonomic.
 
 Trait Betadiversity
 ------------------------
 
-**Columns are observed values of betadiversity (High >.7), (Low < .3), rows are null values where high is delinated by comparing the observed betadiversity to 1000 assemblage comparison of equal taxonomic betadiversity (alpha =.05)**
+**Columns are observed values of betadiversity (High >quantile(.7)), (Low < quantile(.3))** 
+
+**Rows are null values where high is delinated by comparing the observed betadiversity to 1000 assemblage comparison of equal taxonomic betadiversity (alpha =.05)**
 
 <!-- html table generated in R 3.0.2 by xtable 1.7-1 package -->
-<!-- Wed Feb 05 22:40:03 2014 -->
+<!-- Wed Feb 05 22:52:59 2014 -->
 <TABLE border=1>
 <TR> <TH>  </TH> <TH> Low </TH> <TH> Random </TH> <TH> High </TH> <TH> Sum </TH>  </TR>
   <TR> <TD align="right"> High </TD> <TD align="right"> 0.07 </TD> <TD align="right"> 1.06 </TD> <TD align="right"> 6.22 </TD> <TD align="right"> 7.35 </TD> </TR>
@@ -66,7 +73,8 @@ Trait Betadiversity
    </TABLE>
 
 
-There are no occurences of the proposed problem for trait betadiversity
+
+Table reads, 0.07% of the total assemblages are in the 'low' observed quantile, but 'high' compared to a null model of taxonomic.
 
 Distribution of Observed and Null
 
