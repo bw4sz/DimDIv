@@ -27,15 +27,15 @@ require(scales)
 require(boot)
 
 #Set dropbox path
-droppath<-"C:/Users/Ben//Dropbox/"
+droppath<-"C:/Users/Jorge//Dropbox/"
 
 #load data from cluster and env
 load(paste(droppath,"Shared Ben and Catherine/DimDivRevision/Results/DimDivRevision.RData",sep=""))
 #load(paste(droppath,"Shared Ben and Catherine/DimDivRevision/500Iterations/Intervals_.9_.1/DimDivRevisionCluster.RData",sep=""))
 
 #If just working on ouput files, load below
-data.df<-read.csv(paste(droppath,"Shared Ben and Catherine/DimDivRevision/Results_Feb3/FinalData.csv",sep=""),row.names=1)
-data.df.null<-read.csv(paste(droppath,"Shared Ben and Catherine/DimDivRevision/Results_Feb3/FinalDataNull.csv",sep=""),row.names=1)
+data.df<-read.csv(paste(droppath,"Shared Ben and Catherine/DimDivRevision/Results_Feb3Quantile/FinalData.csv",sep=""),row.names=1)
+data.df.null<-read.csv(paste(droppath,"Shared Ben and Catherine/DimDivRevision/Results_Feb3Quantile/FinalDataNull.csv",sep=""),row.names=1)
 
 #fill na as random
 data.df.null[is.na(data.df.null$Sorenson_Null),"Sorenson_Null"]<-"Random"
@@ -44,7 +44,7 @@ data.df.null[is.na(data.df.null$MNTD_Null),"MNTD_Null"]<-"Random"
 
 #observed combination
 obs<-round(ftable(data.df.null$observedT,data.df.null$observedP,data.df.null$observedF,deparse.level=2)/nrow(data.df.null),2)*100
-s
+
 #There is an anomaly in the null cluster, if the assemblages are identical, there is no quantile of the distribution, so the cumulative distribution is =1, thus making the null high
 data.df.null[data.df.null$Sorenson==0,]
 
@@ -56,7 +56,7 @@ data.df.null[data.df.null$Sorenson==0,"MNTD_Null"]<-"Low"
 #Tables and Statistics
 #########################################################################################
 
-setwd(paste(droppath,"Shared Ben and Catherine\\DimDivRevision\\Results_Feb3",sep=""))
+setwd(paste(droppath,"Shared Ben and Catherine\\DimDivRevision\\Results_Feb3Quantile",sep=""))
 
 #Get the bounds of each 
 range_metrics<-list()
@@ -137,7 +137,7 @@ range_plots<-lapply(18:20,function(x){
 #Create multiple options for the hyplist, hold them in a list and spit them to file seperately
 
 Hyplist.func<-function(Tax,Phylo,Func){
-  setwd(paste(droppath,"Shared Ben and Catherine\\DimDivRevision\\Results_Feb3",sep=""))
+  setwd(paste(droppath,"Shared Ben and Catherine\\DimDivRevision\\Results_Feb3Quantile",sep=""))
   
   #Create directory
   dir.store<-dir.create(paste(Tax,Phylo,Func,sep="_"))
@@ -238,7 +238,7 @@ Hyplist.func<-function(Tax,Phylo,Func){
   remove.level<-levels(as.factor(HypBox$L1))[str_detect(levels(as.factor(HypBox$L1)),"Random")]
   HypBox<-HypBox[!HypBox$L1 %in% remove.level,]
   
-  setwd(paste(droppath,"Shared Ben and Catherine\\DimDivRevision\\Results_Feb3",sep=""))
+  setwd(paste(droppath,"Shared Ben and Catherine\\DimDivRevision\\Results_Feb3Quantile",sep=""))
   setwd(paste(Tax,Phylo,Func,sep="_"))
   dir.create("3WayBoxplots")
   setwd("3WayBoxplots")
@@ -272,7 +272,7 @@ Hyplist.func<-function(Tax,Phylo,Func){
   
   #Function for spatial lines for all hypothesis, overlayed on an Ecuador Map
   
-  setwd(paste(droppath,"Shared Ben and Catherine\\DimDivRevision\\Results_Feb3",sep=""))
+  setwd(paste(droppath,"Shared Ben and Catherine\\DimDivRevision\\Results_Feb3Quantile",sep=""))
   setwd(paste(Tax,Phylo,Func,sep="_"))
   dir.create("Maps")
   setwd("Maps")
@@ -405,7 +405,7 @@ Hyplist.func<-function(Tax,Phylo,Func){
   
   #Show three way combinations only.
  
-  setwd(paste(droppath,"Shared Ben and Catherine\\DimDivRevision\\Results_Feb3",sep=""))
+  setwd(paste(droppath,"Shared Ben and Catherine\\DimDivRevision\\Results_Feb3Quantile",sep=""))
   setwd(paste(Tax,Phylo,Func,sep="_"))
   dir.create("1WayBoxplots")
   setwd("1WayBoxplots")
@@ -443,7 +443,7 @@ Hyplist.func<-function(Tax,Phylo,Func){
  
 ###Done
   #save data from that run
-  setwd(paste(droppath,"Shared Ben and Catherine\\DimDivRevision\\Results_Feb3",sep=""))
+  setwd(paste(droppath,"Shared Ben and Catherine\\DimDivRevision\\Results_Feb3Quantile",sep=""))
   setwd(paste(Tax,Phylo,Func,sep="_"))
   
   save.image("plotting.Rdata")
