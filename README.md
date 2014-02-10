@@ -39,7 +39,9 @@ Step 2 Compute Dimensions of Betadiversity Metrics
 While this can be done in pieces, it is greatly advised to run on a cluster, since the code will run 47 serially. On 400 cores, the code takes 7 hrs. 
 Thanks to the Xsede supercomputing cluster "Stampede" for their access to allow this size of computation
 
-Code Block: DimDivClusterAll.R
+Code is best run in seperate pieces, where each script holds one parallelization.
+
+Scripts: ClusterScripts/ - begin with DimDiv1.R to DimDiv5.R
 
 Step 3 Create Figures from the Cluster Output
 --------------------------------
@@ -65,5 +67,5 @@ Appendix 1 of comparison of betadiversity metrics
 
 Code Block: CompareMetrics.R
 
-Step 5
+
 
